@@ -1,0 +1,74 @@
+{
+  "message": "Can you sort out my problem from last time?",
+  "customer_id": "C001",
+  "demo_today": "2026-10-25",
+  "intent": null,
+  "reason_type": null,
+  "order_id": null,
+  "evidence": [],
+  "checks": {},
+  "proposed_decision": null,
+  "critique": null,
+  "decision": "needs_info",
+  "confidence": null,
+  "rules_applied": [],
+  "customer_reply": "I don't have the earlier conversation. What does \"my problem from last time\" refer to?",
+  "limitations": [
+    "Scout asked for clarification (params)."
+  ],
+  "trace": [
+    {
+      "step": "scout",
+      "agent": "scout-intent",
+      "model": null,
+      "action": "decide",
+      "detail": "{\"intent\": \"GENERAL\", \"score\": 0, \"band\": \"reject\", \"risk\": \"low\", \"flags\": [], \"contract\": null, \"latencyMs\": 2.7452}"
+    },
+    {
+      "step": "orchestrator",
+      "agent": "orchestrator",
+      "model": null,
+      "action": "done",
+      "detail": "decision=needs_info routed_by=scout intent=GENERAL model_calls=0"
+    }
+  ],
+  "model_calls": 0,
+  "scout": {
+    "intent": "GENERAL",
+    "score": 0,
+    "band": "reject",
+    "risk": {
+      "level": "low",
+      "flags": [],
+      "redactions": [],
+      "approvals": []
+    },
+    "parameters": {},
+    "toolPlan": [],
+    "modelProfile": null,
+    "contractId": null,
+    "clarification": {
+      "trigger": "params",
+      "question": "I don't have the earlier conversation. What does \"my problem from last time\" refer to?",
+      "options": [
+        {
+          "label": "Change account details such as address, email or phone number",
+          "intent": "account.update"
+        },
+        {
+          "label": "Cancel an order that has not shipped yet",
+          "intent": "order.cancel"
+        },
+        {
+          "label": "Customer says an order never arrived or is long overdue and wants it resolved (refund or replacement)",
+          "intent": "order.not-received"
+        },
+        {
+          "label": "Customer asks where an order is, its shipping status, or when it will arrive",
+          "intent": "order.status"
+        }
+      ]
+    },
+    "latencyMs": 2.7452
+  }
+}

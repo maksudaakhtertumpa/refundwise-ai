@@ -8,6 +8,7 @@ from agent.decide import propose_decision
 from agent.evidence import gather_evidence
 from agent.intake import run_intake
 from agent.reporter import write_report
+from agent.router import route_request
 from agent.runtime import MAX_MODEL_CALLS, ModelBudgetExceeded
 from agent.state import CaseFile
 
@@ -15,7 +16,7 @@ MAX_REVISIONS = 2
 
 
 def run_case(message: str, customer_id: str, demo_today: str | None = None) -> CaseFile:
-    """Run intake → evidence → checks → decide → critic → reporter.
+    """Run Scout Intent, then intake → evidence → checks → decide → critic → reporter.
 
     On critic revise, gather more evidence (at most two extra passes).
     If the 12 model-call cap is hit, stop and return human_review.
@@ -23,8 +24,28 @@ def run_case(message: str, customer_id: str, demo_today: str | None = None) -> C
     case = CaseFile(message=message, customer_id=customer_id)
     if demo_today:
         case.demo_today = demo_today
+    # Scout Intent runs first: it may refuse, clarify, or answer without the agent team.
+    if route_request(case) != "refund":
+        case.add_trace(
+            step="orchestrator",
+            agent="orchestrator",
+            action="done",
+            detail=f"decision={case.decision} routed_by=scout intent={case.scout.get('intent')} model_calls={case.model_calls}",
+        )
+        return case
     try:
-        run_intake(case)
+        if case.order_id and case.reason_type:
+            case.add_trace(
+                step="intake",
+                agent="intake",
+                action="skipped",
+                detail=f"Scout contract already bound order_id={case.order_id} reason_type={case.reason_type}",
+            )
+        else:
+            scout_order, scout_reason = case.order_id, case.reason_type
+            run_intake(case)
+            case.order_id = case.order_id or scout_order
+            case.reason_type = case.reason_type if case.reason_type not in (None, "other") else (scout_reason or case.reason_type)
         gather_evidence(case)
         run_checks(case)
         propose_decision(case)
@@ -85,7 +106,20 @@ def run_case(message: str, customer_id: str, demo_today: str | None = None) -> C
             detail=str(exc)[:300],
         )
         guard = apply_hard_guards(case) if case.checks else None
-        if guard:
+        accepted = (case.critique or {}).get("verdict") == "accept" and case.decision in {"approve", "reject", "human_review"}
+        if accepted and not guard:
+            # The critic already accepted the decision; only the reply writer failed.
+            case.limitations = list(case.limitations) + [
+                "The reply-writing model did not answer in time; the decision was already "
+                "accepted by the critic, and the customer reply uses a standard template."
+            ]
+            case.add_trace(
+                step="orchestrator",
+                agent="orchestrator",
+                action="reporter_fallback",
+                detail=f"kept critic-accepted decision {case.decision}",
+            )
+        elif guard:
             case.decision = guard["decision"]
             case.confidence = 0.95
             case.rules_applied = list(dict.fromkeys(list(case.rules_applied or []) + [guard["rule"]]))
@@ -121,6 +155,11 @@ def run_case(message: str, customer_id: str, demo_today: str | None = None) -> C
 
 def _fallback_reply(decision: str | None) -> str:
     """Plain customer reply used when the reporter model could not run."""
+    if decision == "approve":
+        return (
+            "Thank you for writing in. Your refund has been approved and will be "
+            "returned to your original payment method within 5-7 business days."
+        )
     if decision == "reject":
         return (
             "Thank you for writing in. We checked your order against our refund "

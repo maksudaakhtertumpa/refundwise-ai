@@ -1,0 +1,7 @@
+{
+  "name": "refundwise-scout",
+  "private": true,
+  "type": "module",
+  "description": "Scout Intent engine for RefundWise AI, implemented from the Meterless Scout Intent spec.",
+  "engines": { "node": ">=18" }
+}

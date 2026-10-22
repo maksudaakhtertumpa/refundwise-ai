@@ -105,16 +105,21 @@ def _get_client() -> OpenAI:
 
 
 def _is_aborted(exc: BaseException) -> bool:
-    """True when Nightshift aborted the request (HTTP 499 / request_aborted)."""
+    """True when Nightshift aborted or timed out the request, or the upstream returned 5xx."""
     text = str(exc)
-    return "request_aborted" in text or "Error code: 499" in text
+    return (
+        "request_aborted" in text
+        or "Error code: 499" in text
+        or "timed out" in text.lower()
+        or "Error code: 50" in text
+    )
 
 
 def _timeout_for_lane(lane: str) -> float:
     """Seconds to wait for one completion on this lane (override in .env)."""
     if lane.strip().lower() == "deep":
         return float(os.getenv("NEMOTRON_DEEP_TIMEOUT") or 240)
-    return float(os.getenv("NEMOTRON_FAST_TIMEOUT") or 90)
+    return float(os.getenv("NEMOTRON_FAST_TIMEOUT") or 150)
 
 
 def _model_for_lane(lane: str) -> str:

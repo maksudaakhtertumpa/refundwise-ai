@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "note": "Profiles served through Meterless Nightshift on this machine (the Meterless Runtime at 127.0.0.1:8088).",
+  "profiles": [
+    {
+      "id": "nemotron-lightning",
+      "provider": "meterless-nightshift",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "contextTokens": 262000,
+      "costPer1kTokens": 0,
+      "latencyP95Ms": 8000,
+      "capabilities": ["function_calling", "json_mode"],
+      "dataClasses": ["public", "internal", "pii"]
+    },
+    {
+      "id": "nemotron-super",
+      "provider": "meterless-nightshift",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "contextTokens": 1000000,
+      "costPer1kTokens": 0,
+      "latencyP95Ms": 120000,
+      "capabilities": ["function_calling", "json_mode", "reasoning", "vision"],
+      "dataClasses": ["public", "internal", "pii"]
+    }
+  ]
+}

@@ -9,7 +9,7 @@
     {
       "id": "E1",
       "source": "shop_orders.orders",
-      "sql": "SELECT * FROM shop_orders.orders WHERE order_id = 'ORD-1031' AND customer_id = 'C005'",
+      "sql": "SELECT order_id, customer_id, order_date, delivery_date, product_name, category, unit_price, quantity, order_total, payment_method, status, final_sale\nFROM shop_orders.orders\nWHERE order_id = 'ORD-1031' AND customer_id = 'C005'",
       "rows": [
         {
           "order_id": "ORD-1031",
@@ -31,7 +31,7 @@
     {
       "id": "E2",
       "source": "support_desk.refund_history",
-      "sql": "SELECT * FROM support_desk.refund_history WHERE customer_id = 'C005'",
+      "sql": "SELECT refund_id, customer_id, order_id, request_date, amount, reason, decision\nFROM support_desk.refund_history\nWHERE customer_id = 'C005'",
       "rows": [
         {
           "refund_id": "RF-2001",
@@ -66,14 +66,14 @@
     {
       "id": "E3",
       "source": "policy_kb.refund_policy",
-      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Clothing'",
+      "sql": "SELECT rule_id, category, reason_type, window_days, auto_approve_limit, outcome, rule_text\nFROM policy_kb.refund_policy\nWHERE category = 'Clothing' AND reason_type = 'changed_mind'",
       "rows": [],
       "note": "policy_kb.refund_policy"
     },
     {
       "id": "E4",
       "source": "policy_kb.refund_policy",
-      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'ALL'",
+      "sql": "SELECT rule_id, category, reason_type, window_days, auto_approve_limit, outcome, rule_text\nFROM policy_kb.refund_policy\nWHERE category = 'ALL' AND reason_type = 'changed_mind'",
       "rows": [
         {
           "rule_id": "R1",
@@ -83,69 +83,6 @@
           "auto_approve_limit": "200.00",
           "outcome": "approve",
           "rule_text": "Unused items may be returned for a full refund within 30 days of delivery."
-        },
-        {
-          "rule_id": "R3",
-          "category": "ALL",
-          "reason_type": "defective",
-          "window_days": "30",
-          "auto_approve_limit": "200.00",
-          "outcome": "approve",
-          "rule_text": "Items that arrive damaged or defective are refunded in full within 30 days of delivery; a photo is requested."
-        },
-        {
-          "rule_id": "R4",
-          "category": "ALL",
-          "reason_type": "not_received",
-          "window_days": "14",
-          "auto_approve_limit": "200.00",
-          "outcome": "approve",
-          "rule_text": "If an order has not been delivered 14 days after the order date, the customer may choose a refund or a replacement."
-        },
-        {
-          "rule_id": "R5",
-          "category": "ALL",
-          "reason_type": "any",
-          "window_days": "0",
-          "auto_approve_limit": "0E-18",
-          "outcome": "reject",
-          "rule_text": "Items marked final sale cannot be refunded unless they are defective."
-        },
-        {
-          "rule_id": "R7",
-          "category": "ALL",
-          "reason_type": "any",
-          "window_days": "0",
-          "auto_approve_limit": "200.00",
-          "outcome": "human_review",
-          "rule_text": "Any refund above 200.00 must be reviewed by a support lead before approval."
-        },
-        {
-          "rule_id": "R8",
-          "category": "ALL",
-          "reason_type": "any",
-          "window_days": "90",
-          "auto_approve_limit": "0E-18",
-          "outcome": "human_review",
-          "rule_text": "Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse."
-        },
-        {
-          "rule_id": "R9",
-          "category": "ALL",
-          "reason_type": "any",
-          "window_days": "0",
-          "auto_approve_limit": "0E-18",
-          "outcome": "reject",
-          "rule_text": "An order can be refunded only once. Requests for an order that was already refunded are rejected."
-        },
-        {
-          "rule_id": "R10",
-          "category": "ALL",
-          "reason_type": "any",
-          "window_days": "0",
-          "auto_approve_limit": "0E-18",
-          "outcome": "human_review",
-          "rule_text": "When the customer's claim conflicts with order or carrier records, the case goes to human review."
         }
       ],
       "note": "policy_kb.refund_policy"
@@ -170,8 +107,8 @@
     "rules_applied": [
       "R8"
     ],
-    "confidence": 0.9,
-    "rationale": "Customer C005 has exactly 3 approved refunds in the last 90 days (E2: RF-2001, RF-2002, RF-2003), triggering policy R8 which routes to human review for abuse check. Order ORD-1031 is a changed_mind request within 30 days (19 days since delivery, E1), under $200 auto-approve limit, not final sale (E1, E4).",
+    "confidence": 0.95,
+    "rationale": "The changed-mind request for ORD-1031 meets R1 basics: delivered 19 days ago (within 30 days), $59.90 under $200, not final sale, not already refunded (E1). However, checks show exactly 3 approved refunds in the last 90 days (E2), which triggers R8 human_review to check for refund abuse.",
     "evidence_ids": [
       "E1",
       "E2"
@@ -189,27 +126,41 @@
     }
   },
   "decision": "human_review",
-  "confidence": 0.9,
+  "confidence": 0.95,
   "rules_applied": [
     "R8"
   ],
-  "customer_reply": "We're sorry the Linen Summer Dress from order ORD-1031 doesn't fit as expected. Our support team is currently reviewing your case due to recent refund activity, and we'll follow up with you soon with a final decision.",
+  "customer_reply": "We're sorry the Linen Summer Dress from ORD-1031 doesn't fit as expected. Our team will review your request shortly, and we'll be in touch soon with a final decision.",
   "limitations": [
     "Item condition (unused/unworn) could not be verified from available evidence.",
-    "Final refund approval requires manual review by a support lead."
+    "Final refund approval depends on manual review by a support lead."
   ],
   "trace": [
     {
+      "step": "scout",
+      "agent": "scout-intent",
+      "model": null,
+      "action": "decide",
+      "detail": "{\"intent\": \"refund.request\", \"score\": 1, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5J4233HCZP01MQMXGN4N2S8\", \"latencyMs\": 6.3556}"
+    },
+    {
+      "step": "scout",
+      "agent": "executor",
+      "model": null,
+      "action": "contract.verified",
+      "detail": "agent.review: ok"
+    },
+    {
       "step": "intake",
       "agent": "intake",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-      "action": "classify",
-      "detail": "Extract intent, reason_type, order_id"
+      "model": null,
+      "action": "skipped",
+      "detail": "Scout contract already bound order_id=ORD-1031 reason_type=changed_mind"
     },
     {
       "step": "evidence",
       "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "tool_round",
       "detail": "Collect order, history, policy"
     },
@@ -219,6 +170,13 @@
       "model": null,
       "action": "run_sql",
       "detail": "E1 ok=True source=shop_orders.orders"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
     },
     {
       "step": "evidence",
@@ -244,6 +202,13 @@
     {
       "step": "evidence",
       "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
       "model": null,
       "action": "run_sql",
       "detail": "E4 ok=True source=policy_kb.refund_policy"
@@ -258,7 +223,7 @@
     {
       "step": "decide",
       "agent": "decide",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "propose",
       "detail": "Propose decision from checks and policy"
     },
@@ -288,15 +253,42 @@
       "agent": "reporter",
       "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"Checked order ORD-1031 details\", \"evidence_id\": \"E1\", \"detail\": \"Order delivered on 2026-10-06, total $59.90, category Clothing, status delivered, not final sale.\"}, {\"step\": \"Reviewed recent refund history for customer C005\", \"evidence_id\": \"E2\", \"detail\": \"Customer has exactly three approved refunds in the last 90 days (RF-2001, RF-2002, RF-2003), triggering policy R8 for human review.\"}, {\"step\": \"Applied refund policy criteria for changed mind requests\", \"evidence_id\": \"E4\", \"detail\": \"Order is within 30 days of delivery (19 days), under $200 auto-approve limit, and not final sale, but human review is required per R8.\"}]}"
+      "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"Verified order ORD-1031 details\", \"evidence_id\": \"E1\", \"detail\": \"Order delivered 19 days ago, total $59.90, Clothing category, not final sale, status delivered.\"}, {\"step\": \"Reviewed recent refund history for customer C005\", \"evidence_id\": \"E2\", \"detail\": \"Customer has exactly 3 approved refunds in the last 90 days (RF-2001, RF-2002, RF-2003).\"}, {\"step\": \"Applied refund policy criteria\", \"evidence_id\": \"E3\", \"detail\": \"R1 permits 30-day returns for unused items under $200; R8 routes 3+ refunds to human review.\"}]}"
     },
     {
       "step": "orchestrator",
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=human_review confidence=0.9 model_calls=6/12"
+      "detail": "decision=human_review confidence=0.95 model_calls=7/12"
     }
   ],
-  "model_calls": 6
+  "model_calls": 7,
+  "scout": {
+    "intent": "refund.request",
+    "score": 1,
+    "band": "high",
+    "risk": {
+      "level": "medium",
+      "flags": [],
+      "redactions": [],
+      "approvals": []
+    },
+    "parameters": {
+      "order_id": "ORD-1031",
+      "reason_type": "changed_mind"
+    },
+    "toolPlan": [
+      "order.lookup -> zetaris.run_sql",
+      "refund.history -> zetaris.run_sql",
+      "policy.lookup -> zetaris.run_sql",
+      "policy.check -> refundwise.checks",
+      "agent.review -> refundwise.multi_agent",
+      "reply.compose -> refundwise.reporter"
+    ],
+    "modelProfile": "nemotron-lightning",
+    "contractId": "01M5J4233HCZP01MQMXGN4N2S8",
+    "clarification": null,
+    "latencyMs": 6.3556
+  }
 }

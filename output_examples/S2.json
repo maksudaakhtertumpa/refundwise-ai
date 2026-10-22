@@ -9,7 +9,7 @@
     {
       "id": "E1",
       "source": "shop_orders.orders",
-      "sql": "SELECT * FROM shop_orders.orders WHERE order_id = 'ORD-1017' AND customer_id = 'C007'",
+      "sql": "SELECT order_id, customer_id, order_date, delivery_date, product_name, category, unit_price, quantity, order_total, payment_method, status, final_sale\nFROM shop_orders.orders\nWHERE order_id = 'ORD-1017' AND customer_id = 'C007'",
       "rows": [
         {
           "order_id": "ORD-1017",
@@ -31,14 +31,14 @@
     {
       "id": "E2",
       "source": "support_desk.refund_history",
-      "sql": "SELECT * FROM support_desk.refund_history WHERE customer_id = 'C007'",
+      "sql": "SELECT refund_id, customer_id, order_id, request_date, amount, reason, decision\nFROM support_desk.refund_history\nWHERE customer_id = 'C007'",
       "rows": [],
       "note": "support_desk.refund_history"
     },
     {
       "id": "E3",
       "source": "policy_kb.refund_policy",
-      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Electronics'",
+      "sql": "SELECT rule_id, category, reason_type, window_days, auto_approve_limit, outcome, rule_text\nFROM policy_kb.refund_policy\nWHERE category = 'Electronics' AND reason_type = 'changed_mind'",
       "rows": [
         {
           "rule_id": "R2",
@@ -73,7 +73,7 @@
       "R2"
     ],
     "confidence": 1.0,
-    "rationale": "Per R2, Electronics change-of-mind returns are only accepted within 15 days of delivery. Order ORD-1017 was delivered on 2026-08-20 (E1), and 66 days have passed by demo_today 2026-10-25, far exceeding the 15-day window (E3). Therefore, the request is ineligible for a change-of-mind refund.",
+    "rationale": "Order ORD-1017 (E1) was delivered on 2026-08-20. Per R2 (E3), Electronics change-of-mind returns are only accepted within 15 days of delivery. Today is 2026-10-25, which is 66 days since delivery, far exceeding the 15-day window. No other rules (R7, R8, R9, R10) are triggered given the order_total of $149.00, 0 prior refunds, and changed_mind reason type.",
     "evidence_ids": [
       "E1",
       "E3"
@@ -82,7 +82,7 @@
   "critique": {
     "verdict": "accept",
     "missing_evidence": "",
-    "reason": "The proposed decision correctly applies R2: Electronics change-of-mind returns are only accepted within 15 days of delivery, and 66 days have passed since delivery (E1, E3), making the request ineligible for a change-of-mind refund. All factual claims in the proposal are supported by evidence IDs and agree with the provided Python checks.",
+    "reason": "Order ORD-1017 (E1) delivered 2026-08-20; 66 days since delivery far exceeds the 15-day change-of-mind window for Electronics per policy R2 (E3). Python checks (days_since_delivery: 66, delivered: true, category: Electronics, over_auto_limit: false, already_refunded: false) confirm no conflicts. No prior refunds (E2 empty), order under auto-approve limit ($149 < $200). Rejection is fully supported.",
     "issues": []
   },
   "decision": "reject",
@@ -90,17 +90,31 @@
   "rules_applied": [
     "R2"
   ],
-  "customer_reply": "We're sorry you're not satisfied with your wireless headphones. Unfortunately, change-of-mind returns for Electronics items must be requested within 15 days of delivery, and your order was delivered on August 20, 2026, which is beyond that window. We appreciate your understanding and hope you'll consider our other products in the future.",
+  "customer_reply": "We're sorry you're not completely satisfied with your Wireless Headphones. Per our policy, change-of-mind returns for Electronics must be requested within 15 days of delivery, and your order was delivered on August 20, which falls outside that window. We appreciate your understanding.",
   "limitations": [
-    "Could not verify whether the headphones were unopened, as required by policy, though the return window has already expired."
+    "Return decision based solely on the 15-day change-of-mind window for Electronics; no defect or other policy triggers apply."
   ],
   "trace": [
     {
+      "step": "scout",
+      "agent": "scout-intent",
+      "model": null,
+      "action": "decide",
+      "detail": "{\"intent\": \"refund.request\", \"score\": 0.924, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5J3F68PXW54A5E2DJ02VWKZ\", \"latencyMs\": 7.5513}"
+    },
+    {
+      "step": "scout",
+      "agent": "executor",
+      "model": null,
+      "action": "contract.verified",
+      "detail": "agent.review: ok"
+    },
+    {
       "step": "intake",
       "agent": "intake",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-      "action": "classify",
-      "detail": "Extract intent, reason_type, order_id"
+      "model": null,
+      "action": "skipped",
+      "detail": "Scout contract already bound order_id=ORD-1017 reason_type=changed_mind"
     },
     {
       "step": "evidence",
@@ -163,14 +177,14 @@
       "agent": "critic",
       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "review",
-      "detail": "Check proposal against evidence and checks"
+      "detail": "Check proposal against evidence and checks (Request on 'nvidia/nemotron-3.5-super-vl-120b-a12b' was aborted; retried on 'nvidia/nemotron-3.5-lightning-30b-a3b'.)"
     },
     {
       "step": "critic",
       "agent": "critic",
       "model": null,
       "action": "verdict",
-      "detail": "{\"verdict\": \"accept\", \"reason\": \"The proposed decision correctly applies R2: Electronics change-of-mind returns are only accepted within 15 days of delivery, and 66 days have passed since delivery (E1, E3), making the request ineligible for a change-of-mind refund. All factual claims in the proposal are supported by evidence IDs and agree with the provided Python checks.\", \"decision\": \"reject\"}"
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"Order ORD-1017 (E1) delivered 2026-08-20; 66 days since delivery far exceeds the 15-day change-of-mind window for Electronics per policy R2 (E3). Python checks (days_since_delivery: 66, delivered: true, category: Electronics, over_auto_limit: false, already_refunded: false) confirm no conflicts. No prior refunds (E2 empty), order under auto-approve limit ($149 < $200). Rejection is fully supported.\", \"decision\": \"reject\"}"
     },
     {
       "step": "reporter",
@@ -184,15 +198,42 @@
       "agent": "reporter",
       "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified order details, delivery date, category, and final-sale status.\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1017 for Wireless Headphones (Electronics) was delivered on 2026-08-20, total $149.00, and is not marked final sale.\"}, {\"step\": \"Checked refund history for recent requests.\", \"evidence_id\": \"E2\", \"detail\": \"No approved refunds found for customer C007 in the last 90 days.\"}, {\"step\": \"Applied Electronics change-of-mind return policy.\", \"evidence_id\": \"E3\", \"detail\": \"Policy allows Electronics change-of-mind returns only within 15 days of delivery; 66 days have passed, so the request is ineligible.\"}]}"
+      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified delivery date and return window\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1017 delivered on 2026-08-20; 66 days have passed, exceeding the 15-day change-of-mind window for Electronics.\"}, {\"step\": \"Confirmed order total and auto-approve limit\", \"evidence_id\": \"E1\", \"detail\": \"Order total is $149.00, below the $200.00 auto-approve threshold, but the time window restriction takes precedence.\"}, {\"step\": \"Verified item is not final sale\", \"evidence_id\": \"E1\", \"detail\": \"The item is not marked final_sale, but this does not override the 15-day return window for change-of-mind requests.\"}, {\"step\": \"Checked refund history for recent requests\", \"evidence_id\": \"E2\", \"detail\": \"No approved refunds in the last 90 days for customer C007, so no abuse or pattern flags apply.\"}, {\"step\": \"Applied Electronics change-of-mind policy R2\", \"evidence_id\": \"E3\", \"detail\": \"Policy R2 (E3) allows Electronics change-of-mind returns only within 15 days of delivery; the order is 66 days post-delivery, so the request is outside the eligible window.\"}]}"
     },
     {
       "step": "orchestrator",
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=reject confidence=1.0 model_calls=7/12"
+      "detail": "decision=reject confidence=1.0 model_calls=6/12"
     }
   ],
-  "model_calls": 7
+  "model_calls": 6,
+  "scout": {
+    "intent": "refund.request",
+    "score": 0.924,
+    "band": "high",
+    "risk": {
+      "level": "medium",
+      "flags": [],
+      "redactions": [],
+      "approvals": []
+    },
+    "parameters": {
+      "order_id": "ORD-1017",
+      "reason_type": "changed_mind"
+    },
+    "toolPlan": [
+      "order.lookup -> zetaris.run_sql",
+      "refund.history -> zetaris.run_sql",
+      "policy.lookup -> zetaris.run_sql",
+      "policy.check -> refundwise.checks",
+      "agent.review -> refundwise.multi_agent",
+      "reply.compose -> refundwise.reporter"
+    ],
+    "modelProfile": "nemotron-lightning",
+    "contractId": "01M5J3F68PXW54A5E2DJ02VWKZ",
+    "clarification": null,
+    "latencyMs": 7.5513
+  }
 }

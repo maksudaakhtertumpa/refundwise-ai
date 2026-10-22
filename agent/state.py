@@ -66,6 +66,7 @@ class CaseFile:
     limitations: list[str] = field(default_factory=list)
     trace: list[TraceEvent] = field(default_factory=list)
     model_calls: int = 0
+    scout: dict[str, Any] = field(default_factory=dict)
 
     def add_trace(
         self,

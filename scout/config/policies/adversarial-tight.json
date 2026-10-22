@@ -1,0 +1,6 @@
+{
+  "name": "adversarial-tight",
+  "version": "1",
+  "injection": { "tight": true },
+  "rateLimit": { "perUserPerIntentPerMinute": 20 }
+}

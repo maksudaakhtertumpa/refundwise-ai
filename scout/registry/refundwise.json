@@ -1,0 +1,508 @@
+{
+  "version": 1,
+  "note": "RefundWise AI intent registry: the complete surface area the support agent may act on. Anything outside it falls back to GENERAL.",
+  "intents": [
+    {
+      "id": "GENERAL",
+      "category": "general",
+      "description": "Small talk or questions RefundWise does not handle. Replies politely and never routes to tools.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "capabilities": [],
+      "riskClass": "low",
+      "surfaces": [
+        "chat",
+        "email",
+        "api"
+      ],
+      "roles": [
+        "*"
+      ],
+      "examples": [
+        "hello",
+        "thanks for your help",
+        "who am I talking to?",
+        "what is the weather like today?"
+      ],
+      "version": 1
+    },
+    {
+      "id": "refund.request",
+      "category": "refund",
+      "description": "Customer asks for their money back on an order: damaged or defective item, change of mind, or wrong item sent.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "order_id"
+        ],
+        "properties": {
+          "order_id": {
+            "type": "string"
+          },
+          "reason_type": {
+            "enum": [
+              "defective",
+              "changed_mind",
+              "wrong_item",
+              "not_received",
+              "other"
+            ],
+            "default": "other"
+          }
+        }
+      },
+      "x-bind": {
+        "order_id": {
+          "regex": "\\b(ORD-\\d{3,})\\b",
+          "upper": true
+        },
+        "reason_type": {
+          "map": {
+            "defective": [
+              "broken",
+              "damaged",
+              "defective",
+              "faulty",
+              "doesn't work",
+              "does not work",
+              "won't turn on",
+              "stopped working",
+              "coming off",
+              "torn",
+              "cracked",
+              "not working"
+            ],
+            "wrong_item": [
+              "wrong item",
+              "wrong size",
+              "wrong colour",
+              "wrong color",
+              "different item",
+              "not what i ordered"
+            ],
+            "changed_mind": [
+              "don't like",
+              "dont like",
+              "don't need",
+              "dont need",
+              "changed my mind",
+              "doesn't fit",
+              "doesnt fit",
+              "don't want",
+              "no longer need",
+              "not needed anymore"
+            ]
+          }
+        }
+      },
+      "triggers": [
+        {
+          "phrase": "refund",
+          "weight": 0.9
+        },
+        {
+          "phrase": "money back",
+          "weight": 0.9
+        },
+        {
+          "phrase": "return it",
+          "weight": 0.5
+        },
+        {
+          "phrase": "send it back",
+          "weight": 0.5
+        },
+        {
+          "phrase": "stopped working",
+          "weight": 0.35
+        },
+        {
+          "phrase": "arrived broken",
+          "weight": 0.35
+        },
+        {
+          "phrase": "dont need",
+          "weight": 0.55
+        },
+        {
+          "phrase": "no longer need",
+          "weight": 0.55
+        },
+        {
+          "phrase": "dont want",
+          "weight": 0.5
+        },
+        {
+          "phrase": "changed mind",
+          "weight": 0.6
+        },
+        {
+          "phrase": "doesnt fit",
+          "weight": 0.5
+        },
+        {
+          "phrase": "wrong size",
+          "weight": 0.5
+        }
+      ],
+      "negativeTriggers": [
+        "policy",
+        "how many days",
+        "how long"
+      ],
+      "capabilities": [
+        "order.lookup",
+        "refund.history",
+        "policy.lookup",
+        "policy.check",
+        "agent.review",
+        "reply.compose"
+      ],
+      "riskClass": "medium",
+      "surfaces": [
+        "chat",
+        "email",
+        "api"
+      ],
+      "roles": [
+        "customer",
+        "support-agent",
+        "admin"
+      ],
+      "examples": [
+        "I want a refund for order ORD-2001, it arrived broken",
+        "Can I get my money back for ORD-2002? I changed my mind",
+        "Please refund ORD-2003, you sent me the wrong size",
+        "The blender I bought stopped working and I would like a refund"
+      ],
+      "version": 1
+    },
+    {
+      "id": "order.not-received",
+      "category": "order",
+      "description": "Customer says an order never arrived or is long overdue and wants it resolved (refund or replacement).",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "order_id"
+        ],
+        "properties": {
+          "order_id": {
+            "type": "string"
+          },
+          "reason_type": {
+            "enum": [
+              "not_received"
+            ],
+            "default": "not_received"
+          }
+        }
+      },
+      "x-bind": {
+        "order_id": {
+          "regex": "\\b(ORD-\\d{3,})\\b",
+          "upper": true
+        }
+      },
+      "triggers": [
+        {
+          "phrase": "never arrived",
+          "weight": 0.9
+        },
+        {
+          "phrase": "hasnt arrived",
+          "weight": 0.9
+        },
+        {
+          "phrase": "didnt arrive",
+          "weight": 0.9
+        },
+        {
+          "phrase": "never received",
+          "weight": 0.9
+        },
+        {
+          "phrase": "didnt receive",
+          "weight": 0.85
+        },
+        {
+          "phrase": "never came",
+          "weight": 0.8
+        },
+        {
+          "phrase": "lost package",
+          "weight": 0.7
+        },
+        {
+          "phrase": "missing",
+          "weight": 0.4
+        }
+      ],
+      "negativeTriggers": [
+        "track"
+      ],
+      "capabilities": [
+        "order.lookup",
+        "refund.history",
+        "policy.lookup",
+        "policy.check",
+        "agent.review",
+        "reply.compose"
+      ],
+      "riskClass": "medium",
+      "surfaces": [
+        "chat",
+        "email",
+        "api"
+      ],
+      "roles": [
+        "customer",
+        "support-agent",
+        "admin"
+      ],
+      "examples": [
+        "My order ORD-2004 never arrived",
+        "It has been three weeks and ORD-2005 still hasn't arrived",
+        "I didn't receive my parcel for ORD-2006"
+      ],
+      "version": 1
+    },
+    {
+      "id": "order.status",
+      "category": "order",
+      "description": "Customer asks where an order is, its shipping status, or when it will arrive. Read-only.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "order_id"
+        ],
+        "properties": {
+          "order_id": {
+            "type": "string"
+          }
+        }
+      },
+      "x-bind": {
+        "order_id": {
+          "regex": "\\b(ORD-\\d{3,})\\b",
+          "upper": true
+        }
+      },
+      "triggers": [
+        {
+          "phrase": "track",
+          "weight": 0.8
+        },
+        {
+          "phrase": "status",
+          "weight": 0.7
+        },
+        {
+          "phrase": "eta",
+          "weight": 0.6
+        },
+        {
+          "phrase": "shipped",
+          "weight": 0.4
+        },
+        {
+          "phrase": "arrive",
+          "weight": 0.35
+        },
+        {
+          "phrase": "wheres",
+          "weight": 0.5
+        },
+        {
+          "phrase": "expected to arrive",
+          "weight": 0.6
+        },
+        {
+          "phrase": "expected delivery",
+          "weight": 0.6
+        }
+      ],
+      "capabilities": [
+        "order.lookup",
+        "reply.compose"
+      ],
+      "riskClass": "low",
+      "surfaces": [
+        "chat",
+        "email",
+        "api"
+      ],
+      "roles": [
+        "customer",
+        "support-agent",
+        "admin"
+      ],
+      "examples": [
+        "Where is my order ORD-2010?",
+        "Can you track ORD-2011 for me",
+        "What's the status of my order ORD-2012",
+        "When will my package arrive?"
+      ],
+      "version": 1
+    },
+    {
+      "id": "policy.question",
+      "category": "policy",
+      "description": "General question about the refund or return policy, such as how many days a customer has to return something.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "triggers": [
+        {
+          "phrase": "policy",
+          "weight": 0.8
+        },
+        {
+          "phrase": "return window",
+          "weight": 0.8
+        },
+        {
+          "phrase": "how many days",
+          "weight": 0.6
+        },
+        {
+          "phrase": "how long",
+          "weight": 0.5
+        }
+      ],
+      "capabilities": [
+        "policy.lookup",
+        "reply.compose"
+      ],
+      "riskClass": "low",
+      "surfaces": [
+        "chat",
+        "email",
+        "api"
+      ],
+      "roles": [
+        "*"
+      ],
+      "examples": [
+        "What is your return policy?",
+        "How many days do I have to return electronics?",
+        "Do you refund digital products?"
+      ],
+      "version": 1
+    },
+    {
+      "id": "order.cancel",
+      "category": "order",
+      "description": "Cancel an order that has not shipped yet. High risk: changes an order, so it needs operator review.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "order_id"
+        ],
+        "properties": {
+          "order_id": {
+            "type": "string"
+          }
+        }
+      },
+      "x-bind": {
+        "order_id": {
+          "regex": "\\b(ORD-\\d{3,})\\b",
+          "upper": true
+        }
+      },
+      "triggers": [
+        {
+          "phrase": "cancel",
+          "weight": 0.95
+        }
+      ],
+      "capabilities": [
+        "order.lookup",
+        "approval.require"
+      ],
+      "riskClass": "high",
+      "surfaces": [
+        "chat",
+        "email",
+        "api"
+      ],
+      "roles": [
+        "customer",
+        "support-agent",
+        "admin"
+      ],
+      "examples": [
+        "Please cancel my order ORD-2020",
+        "I want to cancel ORD-2021 before it ships"
+      ],
+      "version": 1
+    },
+    {
+      "id": "account.update",
+      "category": "account",
+      "description": "Change account details such as address, email or phone number. High risk: needs operator review.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "enum": [
+              "address",
+              "email",
+              "phone",
+              "password"
+            ]
+          }
+        }
+      },
+      "triggers": [
+        {
+          "phrase": "change address",
+          "weight": 0.9
+        },
+        {
+          "phrase": "update address",
+          "weight": 0.9
+        },
+        {
+          "phrase": "change email",
+          "weight": 0.9
+        },
+        {
+          "phrase": "update email",
+          "weight": 0.9
+        },
+        {
+          "phrase": "phone number",
+          "weight": 0.6
+        },
+        {
+          "phrase": "change password",
+          "weight": 0.8
+        }
+      ],
+      "capabilities": [
+        "approval.require"
+      ],
+      "riskClass": "high",
+      "surfaces": [
+        "chat",
+        "email",
+        "api"
+      ],
+      "roles": [
+        "customer",
+        "support-agent",
+        "admin"
+      ],
+      "examples": [
+        "I need to change my delivery address",
+        "Please update the email on my account"
+      ],
+      "version": 1
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "default",
+  "version": "1",
+  "rateLimit": { "perUserPerIntentPerMinute": 20 },
+  "intents": {
+    "deal.recover": {
+      "allow": { "params": { "count": { "max": 20 } } },
+      "deny": { "param-combinations": [{ "channel": "call", "count": { "gt": 5 } }] }
+    },
+    "email.send": { "require-approval": [{}] }
+  }
+}

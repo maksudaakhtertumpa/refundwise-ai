@@ -1,0 +1,134 @@
+{
+  "message": "How long do I have to send electronics back?",
+  "customer_id": "C001",
+  "demo_today": "2026-10-25",
+  "intent": null,
+  "reason_type": null,
+  "order_id": null,
+  "evidence": [
+    {
+      "id": "E1",
+      "source": "policy_kb.refund_policy",
+      "sql": "SELECT rule_id, category, reason_type, rule_text FROM policy_kb.refund_policy ORDER BY rule_id",
+      "rows": [
+        {
+          "rule_id": "R1",
+          "category": "ALL",
+          "reason_type": "changed_mind",
+          "rule_text": "Unused items may be returned for a full refund within 30 days of delivery."
+        },
+        {
+          "rule_id": "R10",
+          "category": "ALL",
+          "reason_type": "any",
+          "rule_text": "When the customer's claim conflicts with order or carrier records, the case goes to human review."
+        },
+        {
+          "rule_id": "R2",
+          "category": "Electronics",
+          "reason_type": "changed_mind",
+          "rule_text": "Electronics change-of-mind returns are accepted only within 15 days of delivery and must be unopened."
+        },
+        {
+          "rule_id": "R3",
+          "category": "ALL",
+          "reason_type": "defective",
+          "rule_text": "Items that arrive damaged or defective are refunded in full within 30 days of delivery; a photo is requested."
+        },
+        {
+          "rule_id": "R4",
+          "category": "ALL",
+          "reason_type": "not_received",
+          "rule_text": "If an order has not been delivered 14 days after the order date, the customer may choose a refund or a replacement."
+        },
+        {
+          "rule_id": "R5",
+          "category": "ALL",
+          "reason_type": "any",
+          "rule_text": "Items marked final sale cannot be refunded unless they are defective."
+        },
+        {
+          "rule_id": "R6",
+          "category": "Digital",
+          "reason_type": "any",
+          "rule_text": "Digital products (licences, downloads) are non-refundable once delivered, unless the product does not work."
+        },
+        {
+          "rule_id": "R7",
+          "category": "ALL",
+          "reason_type": "any",
+          "rule_text": "Any refund above 200.00 must be reviewed by a support lead before approval."
+        },
+        {
+          "rule_id": "R8",
+          "category": "ALL",
+          "reason_type": "any",
+          "rule_text": "Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse."
+        },
+        {
+          "rule_id": "R9",
+          "category": "ALL",
+          "reason_type": "any",
+          "rule_text": "An order can be refunded only once. Requests for an order that was already refunded are rejected."
+        }
+      ],
+      "note": "policy question"
+    }
+  ],
+  "checks": {},
+  "proposed_decision": null,
+  "critique": null,
+  "decision": "answered",
+  "confidence": 1.0,
+  "rules_applied": [
+    "R1",
+    "R2",
+    "R3"
+  ],
+  "customer_reply": "Electronics change-of-mind returns are accepted only within 15 days of delivery and must be unopened. (R2) Unused items may be returned for a full refund within 30 days of delivery. (R1) Items that arrive damaged or defective are refunded in full within 30 days of delivery; a photo is requested. (R3) [evidence E1]",
+  "limitations": [],
+  "trace": [
+    {
+      "step": "scout",
+      "agent": "scout-intent",
+      "model": null,
+      "action": "decide",
+      "detail": "{\"intent\": \"policy.question\", \"score\": 0.5705, \"band\": \"medium\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5J4YE80V6DE7SDWSBHQ96NN\", \"latencyMs\": 3.6865}"
+    },
+    {
+      "step": "scout",
+      "agent": "executor",
+      "model": null,
+      "action": "contract.verified",
+      "detail": "policy.lookup: ok"
+    },
+    {
+      "step": "orchestrator",
+      "agent": "orchestrator",
+      "model": null,
+      "action": "done",
+      "detail": "decision=answered routed_by=scout intent=policy.question model_calls=0"
+    }
+  ],
+  "model_calls": 0,
+  "scout": {
+    "intent": "policy.question",
+    "score": 0.5705,
+    "band": "medium",
+    "risk": {
+      "level": "low",
+      "flags": [],
+      "redactions": [],
+      "approvals": []
+    },
+    "parameters": {},
+    "toolPlan": [
+      "policy.lookup -> zetaris.run_sql",
+      "reply.compose -> refundwise.reporter"
+    ],
+    "modelProfile": "nemotron-lightning",
+    "contractId": "01M5J4YE80V6DE7SDWSBHQ96NN",
+    "clarification": null,
+    "latencyMs": 3.6865
+  }
+}

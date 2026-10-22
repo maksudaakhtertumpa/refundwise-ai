@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "note": "Abstract capabilities -> concrete tools. Edges carry availability, latency, cost and permissions. Local tools win ties (local-first).",
+  "capabilities": {
+    "world.query":      [{ "id": "zetaris.run_sql", "local": true, "latencyMs": 900, "cost": 0, "permissions": ["*"], "surfaces": ["chat", "inbox", "api", "email"] }],
+    "world.assert":     [{ "id": "crm.write", "local": false, "latencyMs": 600, "cost": 0, "permissions": ["ae", "sales-leader", "admin"] }],
+    "memory.recall":    [{ "id": "hmem.recall", "local": true, "latencyMs": 50, "cost": 0, "permissions": ["*"] }],
+    "swarm.run":        [{ "id": "swarm.run", "local": false, "latencyMs": 4000, "cost": 1, "permissions": ["*"] }],
+    "markovian.chain":  [{ "id": "markovian.chain", "local": true, "latencyMs": 3000, "cost": 0, "permissions": ["*"] }],
+    "email.draft":      [{ "id": "mail.draft", "local": true, "latencyMs": 800, "cost": 0, "permissions": ["*"], "surfaces": ["inbox", "chat"] }],
+    "email.send":       [{ "id": "mail.send", "local": false, "latencyMs": 800, "cost": 0, "permissions": ["marketing", "exec", "admin"] }],
+    "calendar.create":  [{ "id": "calendar.create_event", "local": false, "latencyMs": 400, "cost": 0, "permissions": ["*"] }],
+    "approval.require": [{ "id": "human.review_queue", "local": true, "latencyMs": 0, "cost": 0, "permissions": ["*"] }],
+
+    "order.lookup":     [{ "id": "zetaris.run_sql", "local": true, "latencyMs": 900, "cost": 0, "permissions": ["*"] }],
+    "refund.history":   [{ "id": "zetaris.run_sql", "local": true, "latencyMs": 900, "cost": 0, "permissions": ["*"] }],
+    "policy.lookup":    [{ "id": "zetaris.run_sql", "local": true, "latencyMs": 900, "cost": 0, "permissions": ["*"] }],
+    "policy.check":     [{ "id": "refundwise.checks", "local": true, "latencyMs": 5, "cost": 0, "permissions": ["*"] }],
+    "agent.review":     [{ "id": "refundwise.multi_agent", "local": true, "latencyMs": 60000, "cost": 0, "permissions": ["*"] }],
+    "reply.compose":    [{ "id": "refundwise.reporter", "local": true, "latencyMs": 8000, "cost": 0, "permissions": ["*"] }]
+  }
+}

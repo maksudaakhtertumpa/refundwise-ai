@@ -1,0 +1,12 @@
+{
+  "name": "refundwise",
+  "version": "1",
+  "injection": { "tight": true },
+  "rateLimit": { "perUserPerIntentPerMinute": 10 },
+  "intents": {
+    "refund.request":     { "allow": { "roles": ["customer", "support-agent", "admin"], "surfaces": ["chat", "email", "api"] } },
+    "order.not-received": { "allow": { "roles": ["customer", "support-agent", "admin"], "surfaces": ["chat", "email", "api"] } },
+    "order.cancel":       { "require-approval": [{}] },
+    "account.update":     { "require-approval": [{}] }
+  }
+}

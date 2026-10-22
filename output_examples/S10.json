@@ -1,0 +1,79 @@
+{
+  "message": "Hey, where's ORD-1042 right now? Has it shipped?",
+  "customer_id": "C003",
+  "demo_today": "2026-10-25",
+  "intent": null,
+  "reason_type": null,
+  "order_id": "ORD-1042",
+  "evidence": [
+    {
+      "id": "E1",
+      "source": "shop_orders.orders",
+      "sql": "SELECT order_id, product_name, order_date, delivery_date, status FROM shop_orders.orders WHERE order_id = 'ORD-1042' AND customer_id = 'C003'",
+      "rows": [
+        {
+          "order_id": "ORD-1042",
+          "product_name": "Trail Running Shoes",
+          "order_date": "2026-10-07",
+          "delivery_date": "2026-10-10",
+          "status": "delivered"
+        }
+      ],
+      "note": "order status"
+    }
+  ],
+  "checks": {},
+  "proposed_decision": null,
+  "critique": null,
+  "decision": "answered",
+  "confidence": 1.0,
+  "rules_applied": [],
+  "customer_reply": "Your Trail Running Shoes (ORD-1042) was delivered on 2026-10-10. [evidence E1]",
+  "limitations": [],
+  "trace": [
+    {
+      "step": "scout",
+      "agent": "scout-intent",
+      "model": null,
+      "action": "decide",
+      "detail": "{\"intent\": \"order.status\", \"score\": 0.9088, \"band\": \"high\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5J4YDXYR180BJF8NXD98QXX\", \"latencyMs\": 2.9497}"
+    },
+    {
+      "step": "scout",
+      "agent": "executor",
+      "model": null,
+      "action": "contract.verified",
+      "detail": "order.lookup: ok"
+    },
+    {
+      "step": "orchestrator",
+      "agent": "orchestrator",
+      "model": null,
+      "action": "done",
+      "detail": "decision=answered routed_by=scout intent=order.status model_calls=0"
+    }
+  ],
+  "model_calls": 0,
+  "scout": {
+    "intent": "order.status",
+    "score": 0.9088,
+    "band": "high",
+    "risk": {
+      "level": "low",
+      "flags": [],
+      "redactions": [],
+      "approvals": []
+    },
+    "parameters": {
+      "order_id": "ORD-1042"
+    },
+    "toolPlan": [
+      "order.lookup -> zetaris.run_sql",
+      "reply.compose -> refundwise.reporter"
+    ],
+    "modelProfile": "nemotron-lightning",
+    "contractId": "01M5J4YDXYR180BJF8NXD98QXX",
+    "clarification": null,
+    "latencyMs": 2.9497
+  }
+}

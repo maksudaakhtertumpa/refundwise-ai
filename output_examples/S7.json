@@ -152,8 +152,8 @@
     "rules_applied": [
       "R6"
     ],
-    "confidence": 0.95,
-    "rationale": "Per R6, Digital products (licences, downloads) are non-refundable once delivered unless the product does not work. The customer\u2019s reason is changed_mind, not defective/not working. Evidence E1 confirms the order ORD-1066 is a Digital licence delivered on 2026-10-18, with order_total $39.00.",
+    "confidence": 1.0,
+    "rationale": "R6 states Digital products (licences, downloads) are non-refundable once delivered unless the product does not work. E1 confirms ORD-1066 is a Digital licence delivered on 2026-10-18. The reason is changed_mind, not defective, so R6 applies and rejects.",
     "evidence_ids": [
       "E1"
     ]
@@ -161,25 +161,40 @@
   "critique": {
     "verdict": "accept",
     "missing_evidence": "",
-    "reason": "E1 confirms ORD-1066 is a Digital licence, delivered 2026-10-18, total $39.00; E3 states R6 rejects delivered digital products unless defective; E2 shows no prior refunds. These match the Python checks (category Digital, delivered true, order_total 39.0, already_refunded false). The category-specific R6 correctly governs over the general changed_mind rule R1.",
+    "reason": "R6 governs Digital products: non\u2011refundable once delivered unless defective. ORD\u20111066 is a delivered digital licence, reason changed_mind, so the proposed reject is correct.",
     "issues": []
   },
   "decision": "reject",
-  "confidence": 0.95,
+  "confidence": 1.0,
   "rules_applied": [
     "R6"
   ],
-  "customer_reply": "We're sorry you no longer need the photo editing licence. Unfortunately, digital licences are non-refundable once delivered unless the product is defective, so we can't process a refund for a change of mind.",
+  "customer_reply": "Thank you for reaching out. I've reviewed your order ORD-1066 for the photo editing licence, delivered on 2026-10-18. Our policy for digital products states that refunds aren't available once delivered unless the item is faulty, and since your reason is a change of mind, I'm unable to process a refund. Please let me know if there's anything else I can assist you with.",
   "limitations": [
-    "Could not verify actual product functionality beyond the customer\u2019s claim; no defect reported"
+    "Customer did not allege the product is defective or not working, so the R6 exception cannot be invoked",
+    "Digital delivery means the product has been provided and cannot be physically returned"
   ],
   "trace": [
     {
+      "step": "scout",
+      "agent": "scout-intent",
+      "model": null,
+      "action": "decide",
+      "detail": "{\"intent\": \"refund.request\", \"score\": 0.5799, \"band\": \"medium\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5J4MYG1BR6JRB422XHV37NF\", \"latencyMs\": 4.3781}"
+    },
+    {
+      "step": "scout",
+      "agent": "executor",
+      "model": null,
+      "action": "contract.verified",
+      "detail": "agent.review: ok"
+    },
+    {
       "step": "intake",
       "agent": "intake",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-      "action": "classify",
-      "detail": "Extract intent, reason_type, order_id"
+      "model": null,
+      "action": "skipped",
+      "detail": "Scout contract already bound order_id=ORD-1066 reason_type=changed_mind"
     },
     {
       "step": "evidence",
@@ -240,7 +255,7 @@
     {
       "step": "critic",
       "agent": "critic",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "review",
       "detail": "Check proposal against evidence and checks"
     },
@@ -249,7 +264,7 @@
       "agent": "critic",
       "model": null,
       "action": "verdict",
-      "detail": "{\"verdict\": \"accept\", \"reason\": \"E1 confirms ORD-1066 is a Digital licence, delivered 2026-10-18, total $39.00; E3 states R6 rejects delivered digital products unless defective; E2 shows no prior refunds. These match the Python checks (category Digital, delivered true, order_total 39.0, already_refunded false). The category-specific R6 correctly governs over the general changed_mind rule R1.\", \"decision\": \"reject\"}"
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"R6 governs Digital products: non\\u2011refundable once delivered unless defective. ORD\\u20111066 is a delivered digital licence, reason changed_mind, so the proposed reject is correct.\", \"decision\": \"reject\"}"
     },
     {
       "step": "reporter",
@@ -263,15 +278,42 @@
       "agent": "reporter",
       "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified order ORD-1066 is a digital product delivered on 2026-10-18\", \"evidence_id\": \"E1\", \"detail\": \"category Digital, delivered 2026-10-18, order total $39.00, final_sale false\"}, {\"step\": \"Checked refund history for customer C010 in the last 90 days\", \"evidence_id\": \"E2\", \"detail\": \"0 approved refunds found, no abuse flags apply\"}, {\"step\": \"Applied digital products policy R6: digital licences are non-refundable once delivered unless the product does not work\", \"evidence_id\": \"E3\", \"detail\": \"rule R6 outcome reject, category Digital, any reason type\"}]}"
+      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified order ORD-1066 details from shop_orders\", \"evidence_id\": \"E1\", \"detail\": \"Digital photo editing licence, delivered 2026-10-18, total $39.00, category Digital, already_refunded false, final_sale false\"}, {\"step\": \"Confirmed refund history for customer C010\", \"evidence_id\": \"E2\", \"detail\": \"0 approved refunds in the last 90 days (approved_refunds_last_90_days: 0), no prior refund conflicts\"}, {\"step\": \"Applied category-specific refund policy for digital products\", \"evidence_id\": \"E3\", \"detail\": \"R6 states digital licences are non-refundable once delivered unless the product does not work, overriding the general changed_mind rule R1\"}, {\"step\": \"Evaluated reason type and ruled on applicability\", \"evidence_id\": \"E4\", \"detail\": \"Reason is changed_mind, not defective; therefore R6 applies and the request is rejected per policy\"}]}"
     },
     {
       "step": "orchestrator",
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=reject confidence=0.95 model_calls=6/12"
+      "detail": "decision=reject confidence=1.0 model_calls=5/12"
     }
   ],
-  "model_calls": 6
+  "model_calls": 5,
+  "scout": {
+    "intent": "refund.request",
+    "score": 0.5799,
+    "band": "medium",
+    "risk": {
+      "level": "medium",
+      "flags": [],
+      "redactions": [],
+      "approvals": []
+    },
+    "parameters": {
+      "order_id": "ORD-1066",
+      "reason_type": "changed_mind"
+    },
+    "toolPlan": [
+      "order.lookup -> zetaris.run_sql",
+      "refund.history -> zetaris.run_sql",
+      "policy.lookup -> zetaris.run_sql",
+      "policy.check -> refundwise.checks",
+      "agent.review -> refundwise.multi_agent",
+      "reply.compose -> refundwise.reporter"
+    ],
+    "modelProfile": "nemotron-lightning",
+    "contractId": "01M5J4MYG1BR6JRB422XHV37NF",
+    "clarification": null,
+    "latencyMs": 4.3781
+  }
 }

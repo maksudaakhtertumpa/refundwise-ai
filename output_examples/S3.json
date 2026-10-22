@@ -38,8 +38,17 @@
     {
       "id": "E3",
       "source": "policy_kb.refund_policy",
-      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Electronics'",
+      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Electronics' OR category = 'ALL'",
       "rows": [
+        {
+          "rule_id": "R1",
+          "category": "ALL",
+          "reason_type": "changed_mind",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Unused items may be returned for a full refund within 30 days of delivery."
+        },
         {
           "rule_id": "R2",
           "category": "Electronics",
@@ -48,6 +57,69 @@
           "auto_approve_limit": "200.00",
           "outcome": "approve",
           "rule_text": "Electronics change-of-mind returns are accepted only within 15 days of delivery and must be unopened."
+        },
+        {
+          "rule_id": "R3",
+          "category": "ALL",
+          "reason_type": "defective",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Items that arrive damaged or defective are refunded in full within 30 days of delivery; a photo is requested."
+        },
+        {
+          "rule_id": "R4",
+          "category": "ALL",
+          "reason_type": "not_received",
+          "window_days": "14",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "If an order has not been delivered 14 days after the order date, the customer may choose a refund or a replacement."
+        },
+        {
+          "rule_id": "R5",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "Items marked final sale cannot be refunded unless they are defective."
+        },
+        {
+          "rule_id": "R7",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "200.00",
+          "outcome": "human_review",
+          "rule_text": "Any refund above 200.00 must be reviewed by a support lead before approval."
+        },
+        {
+          "rule_id": "R8",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "90",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse."
+        },
+        {
+          "rule_id": "R9",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "An order can be refunded only once. Requests for an order that was already refunded are rejected."
+        },
+        {
+          "rule_id": "R10",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "When the customer's claim conflicts with order or carrier records, the case goes to human review."
         }
       ],
       "note": "policy_kb.refund_policy"
@@ -73,20 +145,16 @@
       "R7"
     ],
     "confidence": 0.95,
-    "rationale": "The order total is $1249.00, which exceeds the $200.00 auto-approve limit (R7). Although the laptop is defective and delivered within 30 days (E1: delivered 2026-10-15, 10 days since delivery), R3 only approves defective items under $200.00. The checks object flags over_auto_limit: true, directly triggering R7 human_review.",
+    "rationale": "Defective claim within 30 days (R3), but order total $1249.00 exceeds the $200.00 auto-approve limit (R7), requiring support lead review. E1 confirms order total, delivery status, and category.",
     "evidence_ids": [
       "E1"
     ]
   },
   "critique": {
     "verdict": "accept",
-    "missing_evidence": "policy_kb.refund_policy rows for rule R7 and defective reason_type (window days, auto_approve limit, outcome)",
+    "missing_evidence": "",
     "reason": "Order total exceeds the 200.00 auto-approve limit.",
-    "issues": [
-      "R3 and R7 not present in provided evidence",
-      "30-day defective window unsupported by evidence",
-      "$200 auto-approve limit attributed to R7 but E3 ties it to R2"
-    ],
+    "issues": [],
     "hard_guard": {
       "decision": "human_review",
       "rule": "R7",
@@ -98,18 +166,32 @@
   "rules_applied": [
     "R7"
   ],
-  "customer_reply": "We're sorry to hear your laptop isn't turning on. We're reviewing your refund request and will be in touch soon.",
+  "customer_reply": "I'm sorry to hear that your laptop won't turn on. Since the order total exceeds our auto-approve limit, I've escalated your case to a support lead who will review your defective claim and contact you shortly with next steps.",
   "limitations": [
-    "Policy details for defective reason type (R7 window days, auto-approve limit, outcome) not fully verified in provided evidence",
-    "Specific refund outcome for orders over $200.00 with defective category"
+    "Could not independently verify the physical condition of the laptop beyond the customer's report.",
+    "No carrier proof of delivery signature or timestamp details were available for review."
   ],
   "trace": [
     {
+      "step": "scout",
+      "agent": "scout-intent",
+      "model": null,
+      "action": "decide",
+      "detail": "{\"intent\": \"refund.request\", \"score\": 0.9502, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5J3PEFAHW56SNB37MRY9YVR\", \"latencyMs\": 3.8995}"
+    },
+    {
+      "step": "scout",
+      "agent": "executor",
+      "model": null,
+      "action": "contract.verified",
+      "detail": "agent.review: ok"
+    },
+    {
       "step": "intake",
       "agent": "intake",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-      "action": "classify",
-      "detail": "Extract intent, reason_type, order_id"
+      "model": null,
+      "action": "skipped",
+      "detail": "Scout contract already bound order_id=ORD-1055 reason_type=defective"
     },
     {
       "step": "evidence",
@@ -128,13 +210,6 @@
     {
       "step": "evidence",
       "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-      "action": "tool_round",
-      "detail": "Collect order, history, policy"
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
       "model": null,
       "action": "run_sql",
       "detail": "E2 ok=True source=support_desk.refund_history"
@@ -142,7 +217,7 @@
     {
       "step": "evidence",
       "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy"
     },
@@ -170,9 +245,9 @@
     {
       "step": "critic",
       "agent": "critic",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "review",
-      "detail": "Check proposal against evidence and checks"
+      "detail": "Check proposal against evidence and checks (Request on 'nvidia/nemotron-3.5-super-vl-120b-a12b' was aborted; retried on 'nvidia/nemotron-3.5-lightning-30b-a3b'.)"
     },
     {
       "step": "critic",
@@ -186,22 +261,49 @@
       "agent": "reporter",
       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "write",
-      "detail": "Write customer reply and explanation"
+      "detail": "Write customer reply and explanation (Request on 'nvidia/nemotron-3.5-lightning-30b-a3b' was aborted; retried on 'nvidia/nemotron-3.5-lightning-30b-a3b'.)"
     },
     {
       "step": "reporter",
       "agent": "reporter",
       "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"Verified delivery and product details\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1055 delivered on 2026-10-15, 10 days since delivery; category Electronics, total $1249.00\"}, {\"step\": \"Checked refund history for prior approvals\", \"evidence_id\": \"E2\", \"detail\": \"No previous refunds recorded in the last 90 days\"}, {\"step\": \"Reviewed auto-approve limit for defective Electronics\", \"evidence_id\": \"E3\", \"detail\": \"Policy specifies $200.00 auto-approve limit; order total exceeds this, triggering human review\"}]}"
+      "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"Checked the order record for ORD-1055 to verify delivery status, total, and product details.\", \"evidence_id\": \"E1\", \"detail\": \"Order for customer C011, 14in Ultrabook Laptop (Electronics), ordered 2026-10-12, delivered 2026-10-15, total $1249.00, status delivered, not final sale.\"}, {\"step\": \"Checked refund history for customer C011 and order ORD-1055 to confirm no prior refunds in the last 90 days.\", \"evidence_id\": \"E2\", \"detail\": \"No prior refunds found for this customer or order.\"}, {\"step\": \"Compared the defective claim with order total and policy rules R3 and R7.\", \"evidence_id\": \"E3\", \"detail\": \"Policy R3 covers defective items within 30 days, but R7 mandates support lead review for refunds above $200.00; order total $1249.00 exceeds this limit.\"}]}"
     },
     {
       "step": "orchestrator",
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=human_review confidence=0.95 model_calls=7/12"
+      "detail": "decision=human_review confidence=0.95 model_calls=5/12"
     }
   ],
-  "model_calls": 7
+  "model_calls": 5,
+  "scout": {
+    "intent": "refund.request",
+    "score": 0.9502,
+    "band": "high",
+    "risk": {
+      "level": "medium",
+      "flags": [],
+      "redactions": [],
+      "approvals": []
+    },
+    "parameters": {
+      "order_id": "ORD-1055",
+      "reason_type": "defective"
+    },
+    "toolPlan": [
+      "order.lookup -> zetaris.run_sql",
+      "refund.history -> zetaris.run_sql",
+      "policy.lookup -> zetaris.run_sql",
+      "policy.check -> refundwise.checks",
+      "agent.review -> refundwise.multi_agent",
+      "reply.compose -> refundwise.reporter"
+    ],
+    "modelProfile": "nemotron-lightning",
+    "contractId": "01M5J3PEFAHW56SNB37MRY9YVR",
+    "clarification": null,
+    "latencyMs": 3.8995
+  }
 }
