@@ -1,0 +1,49 @@
+order_id,customer_id,order_date,delivery_date,product_name,category,unit_price,quantity,order_total,payment_method,status,final_sale
+ORD-1001,C010,2026-06-08,2026-06-11,Ceramic Dinner Set,Home,95.00,1,95.00,debit_card,delivered,false
+ORD-1002,C009,2026-07-21,2026-07-25,Hair Dryer,Personal Care,75.00,2,150.00,credit_card,delivered,true
+ORD-1003,C001,2026-06-27,2026-07-01,Cotton T-Shirt Pack,Clothing,34.50,1,34.50,debit_card,refunded,false
+ORD-1004,C006,2026-09-06,2026-09-10,Linen Summer Dress,Clothing,59.90,1,59.90,e_wallet,delivered,false
+ORD-1005,C003,2025-11-18,2025-11-22,Wireless Headphones,Electronics,149.00,1,149.00,credit_card,refunded,false
+ORD-1006,C009,2026-07-20,2026-07-22,14in Ultrabook Laptop,Electronics,1249.00,1,1249.00,debit_card,delivered,false
+ORD-1007,C005,2026-06-26,2026-06-30,Linen Summer Dress,Clothing,59.90,2,119.80,online_banking,delivered,false
+ORD-1008,C011,2026-09-03,2026-09-06,Smart Watch,Electronics,229.00,1,229.00,e_wallet,delivered,false
+ORD-1009,C005,2026-07-20,2026-07-24,Cotton T-Shirt Pack,Clothing,34.50,1,34.50,online_banking,refunded,false
+ORD-1010,C007,2026-08-23,2026-08-26,Smart Watch,Electronics,229.00,1,229.00,credit_card,delivered,false
+ORD-1011,C006,2026-07-16,2026-07-20,Air Fryer,Home,139.00,1,139.00,debit_card,delivered,false
+ORD-1012,C011,2026-09-26,2026-09-30,Air Fryer,Home,139.00,1,139.00,debit_card,delivered,false
+ORD-1013,C004,2026-09-18,2026-09-22,E-book Bundle,Digital,19.00,2,38.00,debit_card,delivered,false
+ORD-1014,C005,2026-08-19,2026-08-23,Cotton T-Shirt Pack,Clothing,34.50,1,34.50,debit_card,refunded,false
+ORD-1015,C011,2026-06-17,2026-06-22,Bedsheet Set,Home,49.00,2,98.00,online_banking,delivered,false
+ORD-1016,C009,2026-06-30,2026-07-04,Wireless Headphones,Electronics,149.00,1,149.00,credit_card,delivered,false
+ORD-1017,C007,2026-08-16,2026-08-20,Wireless Headphones,Electronics,149.00,1,149.00,credit_card,delivered,false
+ORD-1018,C005,2026-09-25,2026-09-29,Ceramic Dinner Set,Home,95.00,1,95.00,debit_card,delivered,false
+ORD-1019,C008,2026-08-07,2026-08-11,Cotton T-Shirt Pack,Clothing,34.50,1,34.50,e_wallet,refunded,false
+ORD-1020,C003,2026-08-22,2026-08-26,Hair Dryer,Personal Care,75.00,2,150.00,e_wallet,delivered,true
+ORD-1021,C004,2026-06-21,2026-06-26,Linen Summer Dress,Clothing,59.90,1,59.90,credit_card,delivered,false
+ORD-1022,C005,2026-09-15,2026-09-19,Trail Running Shoes,Shoes,89.00,1,89.00,online_banking,refunded,false
+ORD-1023,C004,2026-08-19,2026-08-23,Hair Dryer,Personal Care,75.00,2,150.00,online_banking,delivered,false
+ORD-1024,C009,2026-08-03,2026-08-05,Ceramic Dinner Set,Home,95.00,1,95.00,e_wallet,delivered,false
+ORD-1025,C001,2026-07-27,2026-07-29,Hair Dryer,Personal Care,75.00,1,75.00,debit_card,delivered,true
+ORD-1026,C002,2026-06-19,2026-06-23,Denim Jacket,Clothing,79.00,1,79.00,online_banking,delivered,false
+ORD-1027,C012,2026-09-01,2026-09-05,Cotton T-Shirt Pack,Clothing,34.50,1,34.50,debit_card,delivered,false
+ORD-1028,C002,2026-09-19,2026-09-24,Cotton T-Shirt Pack,Clothing,34.50,1,34.50,online_banking,delivered,false
+ORD-1029,C008,2026-06-26,2026-07-01,Photo Editing Software Licence,Digital,39.00,1,39.00,e_wallet,delivered,false
+ORD-1030,C002,2026-07-19,2026-07-22,Trail Running Shoes,Shoes,89.00,2,178.00,online_banking,delivered,false
+ORD-1031,C005,2026-10-02,2026-10-06,Linen Summer Dress,Clothing,59.90,1,59.90,debit_card,delivered,false
+ORD-1032,C003,2026-08-03,2026-08-08,Bluetooth Speaker,Electronics,69.00,1,69.00,credit_card,delivered,false
+ORD-1033,C001,2026-06-24,2026-06-27,Photo Editing Software Licence,Digital,39.00,1,39.00,online_banking,delivered,false
+ORD-1034,C008,2026-09-11,2026-09-14,Ceramic Dinner Set,Home,95.00,1,95.00,online_banking,delivered,false
+ORD-1035,C001,2026-09-25,2026-09-30,Air Fryer,Home,139.00,1,139.00,online_banking,delivered,false
+ORD-1036,C003,2026-07-26,2026-07-28,Leather Loafers,Shoes,119.00,1,119.00,e_wallet,delivered,false
+ORD-1037,C001,2026-10-01,2026-10-03,Cotton T-Shirt Pack,Clothing,34.50,1,34.50,credit_card,delivered,false
+ORD-1038,C003,2026-06-18,2026-06-23,Cotton T-Shirt Pack,Clothing,34.50,1,34.50,credit_card,delivered,false
+ORD-1039,C010,2026-06-11,2026-06-16,Kids Sneakers,Shoes,45.00,1,45.00,e_wallet,delivered,false
+ORD-1040,C005,2026-08-20,2026-08-24,Kids Sneakers,Shoes,45.00,1,45.00,online_banking,delivered,false
+ORD-1041,C003,2026-09-26,2026-09-28,E-book Bundle,Digital,19.00,1,19.00,credit_card,delivered,false
+ORD-1042,C003,2026-10-07,2026-10-10,Trail Running Shoes,Shoes,89.00,1,89.00,credit_card,delivered,false
+ORD-1043,C008,2026-06-19,2026-06-22,Hair Dryer,Personal Care,75.00,1,75.00,e_wallet,delivered,false
+ORD-1048,C002,2026-09-20,2026-09-24,Air Fryer,Home,139.00,1,139.00,debit_card,refunded,false
+ORD-1055,C011,2026-10-12,2026-10-15,14in Ultrabook Laptop,Electronics,1249.00,1,1249.00,e_wallet,delivered,false
+ORD-1060,C009,2026-10-01,,Ceramic Dinner Set,Home,95.00,1,95.00,debit_card,shipped,false
+ORD-1066,C010,2026-10-18,2026-10-18,Photo Editing Software Licence,Digital,39.00,1,39.00,credit_card,delivered,false
+ORD-1070,C004,2026-10-14,2026-10-17,Bluetooth Speaker,Electronics,69.00,1,69.00,credit_card,delivered,false

@@ -1,0 +1,61 @@
+{
+  "demo_today": "2026-10-25",
+  "requests": [
+    {
+      "id": "S1",
+      "customer_id": "C003",
+      "message": "Hi, my trail running shoes from order ORD-1042 arrived with the sole coming off. Can I get a refund please?",
+      "expected": "approve",
+      "why": "Defective item, delivered 15 days ago (within 30-day rule R3), 89.00 is under the 200.00 auto-approve limit, no recent refund pattern."
+    },
+    {
+      "id": "S2",
+      "customer_id": "C007",
+      "message": "I don't really like the wireless headphones I bought (ORD-1017). I'd like my money back.",
+      "expected": "reject",
+      "why": "Electronics change of mind is only accepted within 15 days of delivery (R2); delivered 2026-08-20, 66 days ago."
+    },
+    {
+      "id": "S3",
+      "customer_id": "C011",
+      "message": "The laptop from ORD-1055 won't turn on at all. I want a full refund.",
+      "expected": "human_review",
+      "why": "Defective and within window (R3), but 1249.00 is above the 200.00 auto-approve limit (R7)."
+    },
+    {
+      "id": "S4",
+      "customer_id": "C005",
+      "message": "The dress from ORD-1031 doesn't fit me, please refund it.",
+      "expected": "human_review",
+      "why": "Within the 30-day window (R1), but the customer already had 3 approved refunds in the last 90 days (R8)."
+    },
+    {
+      "id": "S5",
+      "customer_id": "C009",
+      "message": "My dinner set (ORD-1060) still hasn't arrived and it's been more than three weeks.",
+      "expected": "approve",
+      "why": "Ordered 2026-10-01, still 'shipped' with no delivery date after 24 days; not-received rule R4 applies (14 days)."
+    },
+    {
+      "id": "S6",
+      "customer_id": "C002",
+      "message": "The air fryer from ORD-1048 stopped working. Refund please.",
+      "expected": "reject",
+      "why": "Order ORD-1048 was already refunded on 2026-09-28 (RF-2004); an order can be refunded only once (R9)."
+    },
+    {
+      "id": "S7",
+      "customer_id": "C010",
+      "message": "I bought the photo editing licence (ORD-1066) but I don't need it anymore.",
+      "expected": "reject",
+      "why": "Digital product delivered; non-refundable unless it does not work (R6)."
+    },
+    {
+      "id": "S8",
+      "customer_id": "C004",
+      "message": "My Bluetooth speaker from ORD-1070 never arrived.",
+      "expected": "human_review",
+      "why": "Customer says not received, but the order record shows delivered on 2026-10-17; conflicting evidence (R10)."
+    }
+  ]
+}

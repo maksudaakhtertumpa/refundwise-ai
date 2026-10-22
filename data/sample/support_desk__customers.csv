@@ -1,0 +1,13 @@
+customer_id,full_name,email,joined_date,loyalty_tier
+C001,Aisyah Rahman,aisyah.r@example.com,2024-03-12,gold
+C002,Daniel Tan,daniel.tan@example.com,2025-01-08,standard
+C003,Nurul Huda,nurul.huda@example.com,2023-11-20,gold
+C004,Arjun Pillai,arjun.p@example.com,2025-06-30,standard
+C005,Mei Ling Wong,meiling.w@example.com,2024-09-14,standard
+C006,Farhan Hossain,farhan.h@example.com,2025-02-17,silver
+C007,Siti Zulaikha,siti.z@example.com,2024-12-01,silver
+C008,Kevin Lim,kevin.lim@example.com,2026-01-05,standard
+C009,Priya Nair,priya.nair@example.com,2023-07-22,gold
+C010,Hafiz Ismail,hafiz.i@example.com,2025-10-10,standard
+C011,Grace Chong,grace.chong@example.com,2024-05-03,silver
+C012,Rahim Uddin,rahim.u@example.com,2026-04-19,standard

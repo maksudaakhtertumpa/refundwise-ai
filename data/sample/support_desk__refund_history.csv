@@ -1,0 +1,10 @@
+refund_id,customer_id,order_id,request_date,amount,reason,decision
+RF-2001,C005,ORD-1009,2026-08-03,34.50,changed_mind,approved
+RF-2002,C005,ORD-1014,2026-09-02,34.50,wrong_size,approved
+RF-2003,C005,ORD-1022,2026-09-29,89.00,changed_mind,approved
+RF-2004,C002,ORD-1048,2026-09-28,139.00,defective,approved
+RF-2005,C001,ORD-1003,2026-07-11,34.50,damaged_in_transit,approved
+RF-2006,C006,ORD-1011,2026-07-30,139.00,changed_mind,rejected
+RF-2007,C008,ORD-1019,2026-08-21,34.50,wrong_item,approved
+RF-2008,C012,ORD-1027,2026-09-15,34.50,changed_mind,rejected
+RF-2009,C003,ORD-1005,2025-12-02,149.00,wrong_size,approved

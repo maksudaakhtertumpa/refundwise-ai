@@ -1,0 +1,11 @@
+rule_id,category,reason_type,window_days,auto_approve_limit,outcome,rule_text
+R1,ALL,changed_mind,30,200,approve,Unused items may be returned for a full refund within 30 days of delivery.
+R2,Electronics,changed_mind,15,200,approve,Electronics change-of-mind returns are accepted only within 15 days of delivery and must be unopened.
+R3,ALL,defective,30,200,approve,Items that arrive damaged or defective are refunded in full within 30 days of delivery; a photo is requested.
+R4,ALL,not_received,14,200,approve,"If an order has not been delivered 14 days after the order date, the customer may choose a refund or a replacement."
+R5,ALL,any,0,0,reject,Items marked final sale cannot be refunded unless they are defective.
+R6,Digital,any,0,0,reject,"Digital products (licences, downloads) are non-refundable once delivered, unless the product does not work."
+R7,ALL,any,0,200,human_review,Any refund above 200.00 must be reviewed by a support lead before approval.
+R8,ALL,any,90,0,human_review,Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse.
+R9,ALL,any,0,0,reject,An order can be refunded only once. Requests for an order that was already refunded are rejected.
+R10,ALL,any,0,0,human_review,"When the customer's claim conflicts with order or carrier records, the case goes to human review."
