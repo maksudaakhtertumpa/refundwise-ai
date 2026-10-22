@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from agent.checks import run_checks
-from agent.critic import run_critic
+from agent.critic import apply_hard_guards, run_critic
 from agent.decide import propose_decision
 from agent.evidence import gather_evidence
 from agent.intake import run_intake
@@ -74,6 +74,39 @@ def run_case(message: str, customer_id: str, demo_today: str | None = None) -> C
                 "Thank you for writing in. A support lead will review this "
                 "request because we could not finish the automated checks."
             )
+    except RuntimeError as exc:
+        # The model provider failed or timed out. Never crash the run and never
+        # guess. If the Python policy guards already settle the case (for
+        # example "already refunded"), use them; otherwise hand it to a person.
+        case.add_trace(
+            step="orchestrator",
+            agent="orchestrator",
+            action="model_error",
+            detail=str(exc)[:300],
+        )
+        guard = apply_hard_guards(case) if case.checks else None
+        if guard:
+            case.decision = guard["decision"]
+            case.confidence = 0.95
+            case.rules_applied = list(dict.fromkeys(list(case.rules_applied or []) + [guard["rule"]]))
+            case.limitations = list(case.limitations) + [
+                "The AI model did not answer in time; the decision comes from the "
+                f"deterministic policy guard {guard['rule']}: {guard['reason']}"
+            ]
+            case.add_trace(
+                step="orchestrator",
+                agent="orchestrator",
+                action="guard_fallback",
+                detail=f"{guard['rule']}: {guard['reason']} -> {guard['decision']}",
+            )
+        else:
+            case.decision = "human_review"
+            case.confidence = 0.0
+            case.limitations = list(case.limitations) + [
+                "The AI model did not answer in time, so the automated review stopped early."
+            ]
+        if not case.customer_reply:
+            case.customer_reply = _fallback_reply(case.decision)
     case.add_trace(
         step="orchestrator",
         agent="orchestrator",
@@ -84,3 +117,17 @@ def run_case(message: str, customer_id: str, demo_today: str | None = None) -> C
         ),
     )
     return case
+
+
+def _fallback_reply(decision: str | None) -> str:
+    """Plain customer reply used when the reporter model could not run."""
+    if decision == "reject":
+        return (
+            "Thank you for writing in. We checked your order against our refund "
+            "policy and are unable to offer a refund for this request. A support "
+            "agent can explain the details if you reply to this message."
+        )
+    return (
+        "Thank you for writing in. A support lead will review this request "
+        "and get back to you shortly."
+    )

@@ -1,0 +1,270 @@
+{
+  "message": "Hi, my trail running shoes from order ORD-1042 arrived with the sole coming off. Can I get a refund please?",
+  "customer_id": "C003",
+  "demo_today": "2026-10-25",
+  "intent": "refund_request",
+  "reason_type": "defective",
+  "order_id": "ORD-1042",
+  "evidence": [
+    {
+      "id": "E1",
+      "source": "shop_orders.orders",
+      "sql": "SELECT order_id, customer_id, order_date, delivery_date, product_name, category, unit_price, quantity, order_total, payment_method, status, final_sale\nFROM shop_orders.orders\nWHERE order_id = 'ORD-1042' AND customer_id = 'C003'",
+      "rows": [
+        {
+          "order_id": "ORD-1042",
+          "customer_id": "C003",
+          "order_date": "2026-10-07",
+          "delivery_date": "2026-10-10",
+          "product_name": "Trail Running Shoes",
+          "category": "Shoes",
+          "unit_price": "89.00",
+          "quantity": "1",
+          "order_total": "89.00",
+          "payment_method": "credit_card",
+          "status": "delivered",
+          "final_sale": "false"
+        }
+      ],
+      "note": "shop_orders.orders"
+    },
+    {
+      "id": "E2",
+      "source": "support_desk.refund_history",
+      "sql": "SELECT refund_id, customer_id, order_id, request_date, amount, reason, decision\nFROM support_desk.refund_history\nWHERE customer_id = 'C003'",
+      "rows": [
+        {
+          "refund_id": "RF-2009",
+          "customer_id": "C003",
+          "order_id": "ORD-1005",
+          "request_date": "2025-12-02",
+          "amount": "149.00",
+          "reason": "wrong_size",
+          "decision": "approved"
+        }
+      ],
+      "note": "support_desk.refund_history"
+    },
+    {
+      "id": "E3",
+      "source": "policy_kb.refund_policy",
+      "sql": "SELECT rule_id, category, reason_type, window_days, auto_approve_limit, outcome, rule_text\nFROM policy_kb.refund_policy\nWHERE category = 'Shoes' AND reason_type = 'defective'\nUNION ALL\nSELECT rule_id, category, reason_type, window_days, auto_approve_limit, outcome, rule_text\nFROM policy_kb.refund_policy\nWHERE category = 'ALL'",
+      "rows": [
+        {
+          "rule_id": "R1",
+          "category": "ALL",
+          "reason_type": "changed_mind",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Unused items may be returned for a full refund within 30 days of delivery."
+        },
+        {
+          "rule_id": "R3",
+          "category": "ALL",
+          "reason_type": "defective",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Items that arrive damaged or defective are refunded in full within 30 days of delivery; a photo is requested."
+        },
+        {
+          "rule_id": "R4",
+          "category": "ALL",
+          "reason_type": "not_received",
+          "window_days": "14",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "If an order has not been delivered 14 days after the order date, the customer may choose a refund or a replacement."
+        },
+        {
+          "rule_id": "R5",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "Items marked final sale cannot be refunded unless they are defective."
+        },
+        {
+          "rule_id": "R7",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "200.00",
+          "outcome": "human_review",
+          "rule_text": "Any refund above 200.00 must be reviewed by a support lead before approval."
+        },
+        {
+          "rule_id": "R8",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "90",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse."
+        },
+        {
+          "rule_id": "R9",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "An order can be refunded only once. Requests for an order that was already refunded are rejected."
+        },
+        {
+          "rule_id": "R10",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "When the customer's claim conflicts with order or carrier records, the case goes to human review."
+        }
+      ],
+      "note": "policy_kb.refund_policy"
+    }
+  ],
+  "checks": {
+    "days_since_delivery": 15,
+    "days_since_order": 18,
+    "delivered": true,
+    "order_total": 89.0,
+    "already_refunded": false,
+    "approved_refunds_last_90_days": 0,
+    "final_sale": false,
+    "category": "Shoes",
+    "over_auto_limit": false,
+    "order_status": "delivered",
+    "delivery_date": "2026-10-10",
+    "order_date": "2026-10-07"
+  },
+  "proposed_decision": {
+    "decision": "approve",
+    "rules_applied": [
+      "R3"
+    ],
+    "confidence": 1.0,
+    "rationale": "Defective shoes received within 30 days of delivery (15 days since delivery, order total $89.00 under the $200.00 auto-approve limit). Policy R3 approves defective items within 30 days of delivery. Evidence E1 confirms delivery on 2026-10-10, order total $89.00, category Shoes, final_sale false. No approved refunds in the last 90 days (E2), and the order is not final sale.",
+    "evidence_ids": [
+      "E1"
+    ]
+  },
+  "critique": {
+    "verdict": "accept",
+    "missing_evidence": "",
+    "reason": "All factual claims in the proposal are directly supported by the Python checks and evidence E1: defective shoes received within 30 days (15 days since delivery), order total $89.00 under the $200.00 auto-approve limit (over_auto_limit=false), not final sale (final_sale=false), and 0 approved refunds in the last 90 days per check. Policy R3 explicitly approves defective items within 30 days of delivery. No checks conflict with the proposal, and the check results are authoritative.",
+    "issues": []
+  },
+  "decision": "approve",
+  "confidence": 1.0,
+  "rules_applied": [
+    "R3"
+  ],
+  "customer_reply": "We're sorry to hear your Trail Running Shoes from order ORD-1042 arrived with the sole coming off. A full refund has been approved, so please keep the shoes and we'll send a prepaid return label shortly.",
+  "limitations": [
+    "Photo of the defect is not on file; approval relies on the customer's claim per policy R3 within the 30-day window."
+  ],
+  "trace": [
+    {
+      "step": "intake",
+      "agent": "intake",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "classify",
+      "detail": "Extract intent, reason_type, order_id"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E1 ok=True source=shop_orders.orders"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E2 ok=True source=support_desk.refund_history"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E3 ok=True source=policy_kb.refund_policy"
+    },
+    {
+      "step": "checks",
+      "agent": "checks",
+      "model": null,
+      "action": "compute",
+      "detail": "{'days_since_delivery': 15, 'days_since_order': 18, 'delivered': True, 'order_total': 89.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Shoes', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-10-10', 'order_date': '2026-10-07'}"
+    },
+    {
+      "step": "decide",
+      "agent": "decide",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "propose",
+      "detail": "Propose decision from checks and policy"
+    },
+    {
+      "step": "critic",
+      "agent": "critic",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "review",
+      "detail": "Check proposal against evidence and checks"
+    },
+    {
+      "step": "critic",
+      "agent": "critic",
+      "model": null,
+      "action": "verdict",
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"All factual claims in the proposal are directly supported by the Python checks and evidence E1: defective shoes received within 30 days (15 days since delivery), order total $89.00 under the $200.00 auto-approve limit (over_auto_limit=false), not final sale (final_sale=false), and 0 approved refunds in the last 90 days per check. Policy R3 explicitly approves defective items within 30 days of delivery. No checks conflict with the proposal, and the check results are authoritative.\", \"decision\": \"approve\"}"
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "write",
+      "detail": "Write customer reply and explanation"
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": null,
+      "action": "reply",
+      "detail": "{\"decision\": \"approve\", \"steps\": [{\"step\": \"Verified delivery date and return window\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1042 delivered on 2026-10-10; 15 days have passed, well within the 30-day refund window.\"}, {\"step\": \"Confirmed order total under auto-approve limit\", \"evidence_id\": \"E1\", \"detail\": \"Order total is $89.00, below the $200.00 auto-approve threshold.\"}, {\"step\": \"Verified item is not final sale\", \"evidence_id\": \"E1\", \"detail\": \"The final_sale flag is false, making the item eligible for a refund.\"}, {\"step\": \"Checked refund history for recent requests\", \"evidence_id\": \"E2\", \"detail\": \"Refund history shows 0 approved refunds in the last 90 days for customer C003, so no abuse flags apply.\"}, {\"step\": \"Applied defective item policy R3\", \"evidence_id\": \"E3\", \"detail\": \"Policy R3 approves defective items within 30 days of delivery with an auto-approve limit of $200.00; a photo is requested but not required for approval within the window.\"}]}"
+    },
+    {
+      "step": "orchestrator",
+      "agent": "orchestrator",
+      "model": null,
+      "action": "done",
+      "detail": "decision=approve confidence=1.0 model_calls=7/12"
+    }
+  ],
+  "model_calls": 7
+}

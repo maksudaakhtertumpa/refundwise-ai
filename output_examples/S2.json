@@ -1,0 +1,198 @@
+{
+  "message": "I don't really like the wireless headphones I bought (ORD-1017). I'd like my money back.",
+  "customer_id": "C007",
+  "demo_today": "2026-10-25",
+  "intent": "refund_request",
+  "reason_type": "changed_mind",
+  "order_id": "ORD-1017",
+  "evidence": [
+    {
+      "id": "E1",
+      "source": "shop_orders.orders",
+      "sql": "SELECT * FROM shop_orders.orders WHERE order_id = 'ORD-1017' AND customer_id = 'C007'",
+      "rows": [
+        {
+          "order_id": "ORD-1017",
+          "customer_id": "C007",
+          "order_date": "2026-08-16",
+          "delivery_date": "2026-08-20",
+          "product_name": "Wireless Headphones",
+          "category": "Electronics",
+          "unit_price": "149.00",
+          "quantity": "1",
+          "order_total": "149.00",
+          "payment_method": "credit_card",
+          "status": "delivered",
+          "final_sale": "false"
+        }
+      ],
+      "note": "shop_orders.orders"
+    },
+    {
+      "id": "E2",
+      "source": "support_desk.refund_history",
+      "sql": "SELECT * FROM support_desk.refund_history WHERE customer_id = 'C007'",
+      "rows": [],
+      "note": "support_desk.refund_history"
+    },
+    {
+      "id": "E3",
+      "source": "policy_kb.refund_policy",
+      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Electronics'",
+      "rows": [
+        {
+          "rule_id": "R2",
+          "category": "Electronics",
+          "reason_type": "changed_mind",
+          "window_days": "15",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Electronics change-of-mind returns are accepted only within 15 days of delivery and must be unopened."
+        }
+      ],
+      "note": "policy_kb.refund_policy"
+    }
+  ],
+  "checks": {
+    "days_since_delivery": 66,
+    "days_since_order": 70,
+    "delivered": true,
+    "order_total": 149.0,
+    "already_refunded": false,
+    "approved_refunds_last_90_days": 0,
+    "final_sale": false,
+    "category": "Electronics",
+    "over_auto_limit": false,
+    "order_status": "delivered",
+    "delivery_date": "2026-08-20",
+    "order_date": "2026-08-16"
+  },
+  "proposed_decision": {
+    "decision": "reject",
+    "rules_applied": [
+      "R2"
+    ],
+    "confidence": 1.0,
+    "rationale": "Per R2, Electronics change-of-mind returns are only accepted within 15 days of delivery. Order ORD-1017 was delivered on 2026-08-20 (E1), and 66 days have passed by demo_today 2026-10-25, far exceeding the 15-day window (E3). Therefore, the request is ineligible for a change-of-mind refund.",
+    "evidence_ids": [
+      "E1",
+      "E3"
+    ]
+  },
+  "critique": {
+    "verdict": "accept",
+    "missing_evidence": "",
+    "reason": "The proposed decision correctly applies R2: Electronics change-of-mind returns are only accepted within 15 days of delivery, and 66 days have passed since delivery (E1, E3), making the request ineligible for a change-of-mind refund. All factual claims in the proposal are supported by evidence IDs and agree with the provided Python checks.",
+    "issues": []
+  },
+  "decision": "reject",
+  "confidence": 1.0,
+  "rules_applied": [
+    "R2"
+  ],
+  "customer_reply": "We're sorry you're not satisfied with your wireless headphones. Unfortunately, change-of-mind returns for Electronics items must be requested within 15 days of delivery, and your order was delivered on August 20, 2026, which is beyond that window. We appreciate your understanding and hope you'll consider our other products in the future.",
+  "limitations": [
+    "Could not verify whether the headphones were unopened, as required by policy, though the return window has already expired."
+  ],
+  "trace": [
+    {
+      "step": "intake",
+      "agent": "intake",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "classify",
+      "detail": "Extract intent, reason_type, order_id"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E1 ok=True source=shop_orders.orders"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E2 ok=True source=support_desk.refund_history"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E3 ok=True source=policy_kb.refund_policy"
+    },
+    {
+      "step": "checks",
+      "agent": "checks",
+      "model": null,
+      "action": "compute",
+      "detail": "{'days_since_delivery': 66, 'days_since_order': 70, 'delivered': True, 'order_total': 149.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-08-20', 'order_date': '2026-08-16'}"
+    },
+    {
+      "step": "decide",
+      "agent": "decide",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "propose",
+      "detail": "Propose decision from checks and policy"
+    },
+    {
+      "step": "critic",
+      "agent": "critic",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "review",
+      "detail": "Check proposal against evidence and checks"
+    },
+    {
+      "step": "critic",
+      "agent": "critic",
+      "model": null,
+      "action": "verdict",
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"The proposed decision correctly applies R2: Electronics change-of-mind returns are only accepted within 15 days of delivery, and 66 days have passed since delivery (E1, E3), making the request ineligible for a change-of-mind refund. All factual claims in the proposal are supported by evidence IDs and agree with the provided Python checks.\", \"decision\": \"reject\"}"
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "write",
+      "detail": "Write customer reply and explanation"
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": null,
+      "action": "reply",
+      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified order details, delivery date, category, and final-sale status.\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1017 for Wireless Headphones (Electronics) was delivered on 2026-08-20, total $149.00, and is not marked final sale.\"}, {\"step\": \"Checked refund history for recent requests.\", \"evidence_id\": \"E2\", \"detail\": \"No approved refunds found for customer C007 in the last 90 days.\"}, {\"step\": \"Applied Electronics change-of-mind return policy.\", \"evidence_id\": \"E3\", \"detail\": \"Policy allows Electronics change-of-mind returns only within 15 days of delivery; 66 days have passed, so the request is ineligible.\"}]}"
+    },
+    {
+      "step": "orchestrator",
+      "agent": "orchestrator",
+      "model": null,
+      "action": "done",
+      "detail": "decision=reject confidence=1.0 model_calls=7/12"
+    }
+  ],
+  "model_calls": 7
+}

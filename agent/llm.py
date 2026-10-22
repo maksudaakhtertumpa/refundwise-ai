@@ -40,16 +40,38 @@ def chat(
     """
     requested = _model_for_lane(lane)
     fallback = os.getenv("METERLESS_MODEL") or _FALLBACK_DEFAULT
-    client = _get_client()
-
-    completion, used_model, note = _complete(
-        client,
-        messages=messages,
-        model=requested,
-        tools=tools,
-        temperature=temperature,
-        fallback_model=fallback,
+    # The deep lane (a 120B model on a free hosted endpoint) can take minutes,
+    # so it gets a longer timeout and fewer retries than the fast lane.
+    client = _get_client().with_options(
+        timeout=_timeout_for_lane(lane),
+        max_retries=1 if lane.strip().lower() == "deep" else 2,
     )
+
+    try:
+        completion, used_model, note = _complete(
+            client,
+            messages=messages,
+            model=requested,
+            tools=tools,
+            temperature=temperature,
+            fallback_model=fallback,
+        )
+    except RuntimeError as exc:
+        # Nightshift sometimes aborts a request (HTTP 499) when the hosted
+        # endpoint is slow or rate-limited. Retry once on the fast Nemotron
+        # lane so the case can finish, and record that it happened.
+        if not _is_aborted(exc):
+            raise
+        retry_model = _model_for_lane("fast")
+        completion, used_model, note = _complete(
+            _get_client().with_options(timeout=_timeout_for_lane("fast"), max_retries=1),
+            messages=messages,
+            model=retry_model,
+            tools=tools,
+            temperature=temperature,
+            fallback_model=fallback,
+        )
+        note = f"Request on {requested!r} was aborted; retried on {retry_model!r}."
     choice = completion.choices[0].message
     message = _assistant_message(choice)
     answered = completion.model or used_model
@@ -80,6 +102,19 @@ def _get_client() -> OpenAI:
         default_headers=_HEADERS,
     )
     return _client
+
+
+def _is_aborted(exc: BaseException) -> bool:
+    """True when Nightshift aborted the request (HTTP 499 / request_aborted)."""
+    text = str(exc)
+    return "request_aborted" in text or "Error code: 499" in text
+
+
+def _timeout_for_lane(lane: str) -> float:
+    """Seconds to wait for one completion on this lane (override in .env)."""
+    if lane.strip().lower() == "deep":
+        return float(os.getenv("NEMOTRON_DEEP_TIMEOUT") or 240)
+    return float(os.getenv("NEMOTRON_FAST_TIMEOUT") or 90)
 
 
 def _model_for_lane(lane: str) -> str:

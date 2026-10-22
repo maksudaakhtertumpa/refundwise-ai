@@ -1,0 +1,220 @@
+{
+  "message": "My dinner set (ORD-1060) still hasn't arrived and it's been more than three weeks.",
+  "customer_id": "C009",
+  "demo_today": "2026-10-25",
+  "intent": "refund_request",
+  "reason_type": "not_received",
+  "order_id": "ORD-1060",
+  "evidence": [
+    {
+      "id": "E1",
+      "source": "shop_orders.orders",
+      "sql": "SELECT order_id, customer_id, order_date, delivery_date, product_name, category, unit_price, quantity, order_total, payment_method, status, final_sale FROM shop_orders.orders WHERE order_id = 'ORD-1060' AND customer_id = 'C009'",
+      "rows": [
+        {
+          "order_id": "ORD-1060",
+          "customer_id": "C009",
+          "order_date": "2026-10-01",
+          "delivery_date": null,
+          "product_name": "Ceramic Dinner Set",
+          "category": "Home",
+          "unit_price": "95.00",
+          "quantity": "1",
+          "order_total": "95.00",
+          "payment_method": "debit_card",
+          "status": "shipped",
+          "final_sale": "false"
+        }
+      ],
+      "note": "shop_orders.orders"
+    },
+    {
+      "id": "E2",
+      "source": "support_desk.refund_history",
+      "sql": "SELECT refund_id, customer_id, order_id, request_date, amount, reason, decision FROM support_desk.refund_history WHERE customer_id = 'C009'",
+      "rows": [],
+      "note": "support_desk.refund_history"
+    },
+    {
+      "id": "E3",
+      "source": "policy_kb.refund_policy",
+      "sql": "SELECT rule_id, category, reason_type, window_days, auto_approve_limit, outcome, rule_text FROM policy_kb.refund_policy WHERE category = 'Home' AND reason_type = 'not_received'",
+      "rows": [],
+      "note": "policy_kb.refund_policy"
+    },
+    {
+      "id": "E4",
+      "source": "policy_kb.refund_policy",
+      "sql": "SELECT rule_id, category, reason_type, window_days, auto_approve_limit, outcome, rule_text FROM policy_kb.refund_policy WHERE category = 'ALL' AND reason_type = 'not_received'",
+      "rows": [
+        {
+          "rule_id": "R4",
+          "category": "ALL",
+          "reason_type": "not_received",
+          "window_days": "14",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "If an order has not been delivered 14 days after the order date, the customer may choose a refund or a replacement."
+        }
+      ],
+      "note": "policy_kb.refund_policy"
+    }
+  ],
+  "checks": {
+    "days_since_delivery": null,
+    "days_since_order": 24,
+    "delivered": false,
+    "order_total": 95.0,
+    "already_refunded": false,
+    "approved_refunds_last_90_days": 0,
+    "final_sale": false,
+    "category": "Home",
+    "over_auto_limit": false,
+    "order_status": "shipped",
+    "delivery_date": null,
+    "order_date": "2026-10-01"
+  },
+  "proposed_decision": {
+    "decision": "approve",
+    "rules_applied": [
+      "R4"
+    ],
+    "confidence": 0.95,
+    "rationale": "Order ORD-1060 was placed on 2026-10-01, has not been delivered (delivered=false, delivery_date=null), and 24 days have passed since the order date, exceeding the R4 14-day window for not_received (E1, checks). Order total is $95.00, under the $200.00 auto-approve limit, and the item is not final sale (E1). Refund history shows no prior approved refunds (E2). R4 outcome is approve (E4).",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E4"
+    ]
+  },
+  "critique": {
+    "verdict": "accept",
+    "missing_evidence": "",
+    "reason": "All factual claims in the proposed decision are supported by evidence (E1, E2, E4) and agree with the Python checks. Order ORD-1060 meets R4 criteria: not delivered, 24 days since order exceeds the 14-day window, total $95.00 under the $200.00 auto-approve limit, not final sale, and no approved refunds in the last 90 days.",
+    "issues": []
+  },
+  "decision": "approve",
+  "confidence": 0.95,
+  "rules_applied": [
+    "R4"
+  ],
+  "customer_reply": "We're sorry your Ceramic Dinner Set hasn't arrived yet. It's been 24 days since your order on October 1st, so you're eligible to choose between a full refund or a replacement. Please let us know which option you'd prefer.",
+  "limitations": [
+    "No delivery tracking carrier details beyond the order status were available for verification."
+  ],
+  "trace": [
+    {
+      "step": "intake",
+      "agent": "intake",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "classify",
+      "detail": "Extract intent, reason_type, order_id"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E1 ok=True source=shop_orders.orders"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E2 ok=True source=support_desk.refund_history"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E3 ok=True source=policy_kb.refund_policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E4 ok=True source=policy_kb.refund_policy"
+    },
+    {
+      "step": "checks",
+      "agent": "checks",
+      "model": null,
+      "action": "compute",
+      "detail": "{'days_since_delivery': None, 'days_since_order': 24, 'delivered': False, 'order_total': 95.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Home', 'over_auto_limit': False, 'order_status': 'shipped', 'delivery_date': None, 'order_date': '2026-10-01'}"
+    },
+    {
+      "step": "decide",
+      "agent": "decide",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "propose",
+      "detail": "Propose decision from checks and policy"
+    },
+    {
+      "step": "critic",
+      "agent": "critic",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "review",
+      "detail": "Check proposal against evidence and checks"
+    },
+    {
+      "step": "critic",
+      "agent": "critic",
+      "model": null,
+      "action": "verdict",
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"All factual claims in the proposed decision are supported by evidence (E1, E2, E4) and agree with the Python checks. Order ORD-1060 meets R4 criteria: not delivered, 24 days since order exceeds the 14-day window, total $95.00 under the $200.00 auto-approve limit, not final sale, and no approved refunds in the last 90 days.\", \"decision\": \"approve\"}"
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "write",
+      "detail": "Write customer reply and explanation"
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": null,
+      "action": "reply",
+      "detail": "{\"decision\": \"approve\", \"steps\": [{\"step\": \"Reviewed order details and timing\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1060 was placed on 2026-10-01, status shipped, no delivery date, and 24 days have passed since the order date.\"}, {\"step\": \"Checked refund policy for undelivered orders\", \"evidence_id\": \"E4\", \"detail\": \"Policy R4 allows a customer to choose a refund or replacement if an order has not been delivered 14 days after the order date.\"}, {\"step\": \"Verified order total and sale status\", \"evidence_id\": \"E1\", \"detail\": \"The order total is $95.00, below the $200.00 auto-approve limit, and the item is not marked final sale.\"}, {\"step\": \"Reviewed refund history\", \"evidence_id\": \"E2\", \"detail\": \"Refund history shows no approved refunds in the last 90 days for this customer.\"}]}"
+    },
+    {
+      "step": "orchestrator",
+      "agent": "orchestrator",
+      "model": null,
+      "action": "done",
+      "detail": "decision=approve confidence=0.95 model_calls=8/12"
+    }
+  ],
+  "model_calls": 8
+}

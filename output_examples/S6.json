@@ -1,0 +1,295 @@
+{
+  "message": "The air fryer from ORD-1048 stopped working. Refund please.",
+  "customer_id": "C002",
+  "demo_today": "2026-10-25",
+  "intent": "refund_request",
+  "reason_type": "defective",
+  "order_id": "ORD-1048",
+  "evidence": [
+    {
+      "id": "E1",
+      "source": "shop_orders.orders",
+      "sql": "SELECT * FROM shop_orders.orders WHERE order_id = 'ORD-1048' AND customer_id = 'C002'",
+      "rows": [
+        {
+          "order_id": "ORD-1048",
+          "customer_id": "C002",
+          "order_date": "2026-09-20",
+          "delivery_date": "2026-09-24",
+          "product_name": "Air Fryer",
+          "category": "Home",
+          "unit_price": "139.00",
+          "quantity": "1",
+          "order_total": "139.00",
+          "payment_method": "debit_card",
+          "status": "refunded",
+          "final_sale": "false"
+        }
+      ],
+      "note": "shop_orders.orders"
+    },
+    {
+      "id": "E2",
+      "source": "support_desk.refund_history",
+      "sql": "SELECT * FROM support_desk.refund_history WHERE customer_id = 'C002'",
+      "rows": [
+        {
+          "refund_id": "RF-2004",
+          "customer_id": "C002",
+          "order_id": "ORD-1048",
+          "request_date": "2026-09-28",
+          "amount": "139.00",
+          "reason": "defective",
+          "decision": "approved"
+        }
+      ],
+      "note": "support_desk.refund_history"
+    },
+    {
+      "id": "E3",
+      "source": "policy_kb.refund_policy",
+      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Home'",
+      "rows": [],
+      "note": "policy_kb.refund_policy"
+    },
+    {
+      "id": "E4",
+      "source": "policy_kb.refund_policy",
+      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'ALL'",
+      "rows": [
+        {
+          "rule_id": "R1",
+          "category": "ALL",
+          "reason_type": "changed_mind",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Unused items may be returned for a full refund within 30 days of delivery."
+        },
+        {
+          "rule_id": "R3",
+          "category": "ALL",
+          "reason_type": "defective",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Items that arrive damaged or defective are refunded in full within 30 days of delivery; a photo is requested."
+        },
+        {
+          "rule_id": "R4",
+          "category": "ALL",
+          "reason_type": "not_received",
+          "window_days": "14",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "If an order has not been delivered 14 days after the order date, the customer may choose a refund or a replacement."
+        },
+        {
+          "rule_id": "R5",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "Items marked final sale cannot be refunded unless they are defective."
+        },
+        {
+          "rule_id": "R7",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "200.00",
+          "outcome": "human_review",
+          "rule_text": "Any refund above 200.00 must be reviewed by a support lead before approval."
+        },
+        {
+          "rule_id": "R8",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "90",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse."
+        },
+        {
+          "rule_id": "R9",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "An order can be refunded only once. Requests for an order that was already refunded are rejected."
+        },
+        {
+          "rule_id": "R10",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "When the customer's claim conflicts with order or carrier records, the case goes to human review."
+        }
+      ],
+      "note": "policy_kb.refund_policy"
+    }
+  ],
+  "checks": {
+    "days_since_delivery": 31,
+    "days_since_order": 35,
+    "delivered": false,
+    "order_total": 139.0,
+    "already_refunded": true,
+    "approved_refunds_last_90_days": 1,
+    "final_sale": false,
+    "category": "Home",
+    "over_auto_limit": false,
+    "order_status": "refunded",
+    "delivery_date": "2026-09-24",
+    "order_date": "2026-09-20"
+  },
+  "proposed_decision": {
+    "decision": "reject",
+    "rules_applied": [
+      "R9"
+    ],
+    "confidence": 1.0,
+    "rationale": "Order ORD-1048 status is 'refunded' (E1), and a prior refund RF-2004 was already approved for the same order on 2026-09-28 (E2). Per R9, an order can be refunded only once; requests for an already-refunded order are rejected.",
+    "evidence_ids": [
+      "E1",
+      "E2"
+    ]
+  },
+  "critique": {
+    "verdict": "accept",
+    "missing_evidence": "",
+    "reason": "Order already refunded (status or refund_history).",
+    "issues": [],
+    "hard_guard": {
+      "decision": "reject",
+      "rule": "R9",
+      "reason": "Order already refunded (status or refund_history)."
+    }
+  },
+  "decision": "reject",
+  "confidence": 1.0,
+  "rules_applied": [
+    "R9"
+  ],
+  "customer_reply": "I'm sorry, but we cannot process a refund for order ORD-1048 as it has already been refunded. If you have another order or question, please let us know and we'll be happy to help.",
+  "limitations": [],
+  "trace": [
+    {
+      "step": "intake",
+      "agent": "intake",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "classify",
+      "detail": "Extract intent, reason_type, order_id"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E1 ok=True source=shop_orders.orders"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E2 ok=True source=support_desk.refund_history"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E3 ok=True source=policy_kb.refund_policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E4 ok=True source=policy_kb.refund_policy"
+    },
+    {
+      "step": "checks",
+      "agent": "checks",
+      "model": null,
+      "action": "compute",
+      "detail": "{'days_since_delivery': 31, 'days_since_order': 35, 'delivered': False, 'order_total': 139.0, 'already_refunded': True, 'approved_refunds_last_90_days': 1, 'final_sale': False, 'category': 'Home', 'over_auto_limit': False, 'order_status': 'refunded', 'delivery_date': '2026-09-24', 'order_date': '2026-09-20'}"
+    },
+    {
+      "step": "decide",
+      "agent": "decide",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "propose",
+      "detail": "Propose decision from checks and policy"
+    },
+    {
+      "step": "critic",
+      "agent": "critic",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "review",
+      "detail": "Check proposal against evidence and checks"
+    },
+    {
+      "step": "critic",
+      "agent": "critic",
+      "model": null,
+      "action": "verdict",
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"Order already refunded (status or refund_history).\", \"decision\": \"reject\"}"
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "write",
+      "detail": "Write customer reply and explanation"
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": null,
+      "action": "reply",
+      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Checked order status and refund history\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1048 status is 'refunded' in shop_orders.orders.\"}, {\"step\": \"Reviewed prior refund records\", \"evidence_id\": \"E2\", \"detail\": \"A prior refund RF-2004 was approved for ORD-1048 on 2026-09-28 in support_desk.refund_history.\"}, {\"step\": \"Applied refund policy\", \"evidence_id\": \"E4\", \"detail\": \"Policy R9 states an order can be refunded only once; requests for already-refunded orders are rejected.\"}]}"
+    },
+    {
+      "step": "orchestrator",
+      "agent": "orchestrator",
+      "model": null,
+      "action": "done",
+      "detail": "decision=reject confidence=1.0 model_calls=8/12"
+    }
+  ],
+  "model_calls": 8
+}

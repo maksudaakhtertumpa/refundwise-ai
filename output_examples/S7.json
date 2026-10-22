@@ -1,0 +1,277 @@
+{
+  "message": "I bought the photo editing licence (ORD-1066) but I don't need it anymore.",
+  "customer_id": "C010",
+  "demo_today": "2026-10-25",
+  "intent": "refund_request",
+  "reason_type": "changed_mind",
+  "order_id": "ORD-1066",
+  "evidence": [
+    {
+      "id": "E1",
+      "source": "shop_orders.orders",
+      "sql": "SELECT * FROM shop_orders.orders WHERE order_id = 'ORD-1066' AND customer_id = 'C010'",
+      "rows": [
+        {
+          "order_id": "ORD-1066",
+          "customer_id": "C010",
+          "order_date": "2026-10-18",
+          "delivery_date": "2026-10-18",
+          "product_name": "Photo Editing Software Licence",
+          "category": "Digital",
+          "unit_price": "39.00",
+          "quantity": "1",
+          "order_total": "39.00",
+          "payment_method": "credit_card",
+          "status": "delivered",
+          "final_sale": "false"
+        }
+      ],
+      "note": "shop_orders.orders"
+    },
+    {
+      "id": "E2",
+      "source": "support_desk.refund_history",
+      "sql": "SELECT * FROM support_desk.refund_history WHERE customer_id = 'C010'",
+      "rows": [],
+      "note": "support_desk.refund_history"
+    },
+    {
+      "id": "E3",
+      "source": "policy_kb.refund_policy",
+      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Digital'",
+      "rows": [
+        {
+          "rule_id": "R6",
+          "category": "Digital",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "Digital products (licences, downloads) are non-refundable once delivered, unless the product does not work."
+        }
+      ],
+      "note": "policy_kb.refund_policy"
+    },
+    {
+      "id": "E4",
+      "source": "policy_kb.refund_policy",
+      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'ALL'",
+      "rows": [
+        {
+          "rule_id": "R1",
+          "category": "ALL",
+          "reason_type": "changed_mind",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Unused items may be returned for a full refund within 30 days of delivery."
+        },
+        {
+          "rule_id": "R3",
+          "category": "ALL",
+          "reason_type": "defective",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Items that arrive damaged or defective are refunded in full within 30 days of delivery; a photo is requested."
+        },
+        {
+          "rule_id": "R4",
+          "category": "ALL",
+          "reason_type": "not_received",
+          "window_days": "14",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "If an order has not been delivered 14 days after the order date, the customer may choose a refund or a replacement."
+        },
+        {
+          "rule_id": "R5",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "Items marked final sale cannot be refunded unless they are defective."
+        },
+        {
+          "rule_id": "R7",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "200.00",
+          "outcome": "human_review",
+          "rule_text": "Any refund above 200.00 must be reviewed by a support lead before approval."
+        },
+        {
+          "rule_id": "R8",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "90",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse."
+        },
+        {
+          "rule_id": "R9",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "An order can be refunded only once. Requests for an order that was already refunded are rejected."
+        },
+        {
+          "rule_id": "R10",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "When the customer's claim conflicts with order or carrier records, the case goes to human review."
+        }
+      ],
+      "note": "policy_kb.refund_policy"
+    }
+  ],
+  "checks": {
+    "days_since_delivery": 7,
+    "days_since_order": 7,
+    "delivered": true,
+    "order_total": 39.0,
+    "already_refunded": false,
+    "approved_refunds_last_90_days": 0,
+    "final_sale": false,
+    "category": "Digital",
+    "over_auto_limit": false,
+    "order_status": "delivered",
+    "delivery_date": "2026-10-18",
+    "order_date": "2026-10-18"
+  },
+  "proposed_decision": {
+    "decision": "reject",
+    "rules_applied": [
+      "R6"
+    ],
+    "confidence": 0.95,
+    "rationale": "Per R6, Digital products (licences, downloads) are non-refundable once delivered unless the product does not work. The customer\u2019s reason is changed_mind, not defective/not working. Evidence E1 confirms the order ORD-1066 is a Digital licence delivered on 2026-10-18, with order_total $39.00.",
+    "evidence_ids": [
+      "E1"
+    ]
+  },
+  "critique": {
+    "verdict": "accept",
+    "missing_evidence": "",
+    "reason": "E1 confirms ORD-1066 is a Digital licence, delivered 2026-10-18, total $39.00; E3 states R6 rejects delivered digital products unless defective; E2 shows no prior refunds. These match the Python checks (category Digital, delivered true, order_total 39.0, already_refunded false). The category-specific R6 correctly governs over the general changed_mind rule R1.",
+    "issues": []
+  },
+  "decision": "reject",
+  "confidence": 0.95,
+  "rules_applied": [
+    "R6"
+  ],
+  "customer_reply": "We're sorry you no longer need the photo editing licence. Unfortunately, digital licences are non-refundable once delivered unless the product is defective, so we can't process a refund for a change of mind.",
+  "limitations": [
+    "Could not verify actual product functionality beyond the customer\u2019s claim; no defect reported"
+  ],
+  "trace": [
+    {
+      "step": "intake",
+      "agent": "intake",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "classify",
+      "detail": "Extract intent, reason_type, order_id"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E1 ok=True source=shop_orders.orders"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E2 ok=True source=support_desk.refund_history"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E3 ok=True source=policy_kb.refund_policy"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E4 ok=True source=policy_kb.refund_policy"
+    },
+    {
+      "step": "checks",
+      "agent": "checks",
+      "model": null,
+      "action": "compute",
+      "detail": "{'days_since_delivery': 7, 'days_since_order': 7, 'delivered': True, 'order_total': 39.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Digital', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-10-18', 'order_date': '2026-10-18'}"
+    },
+    {
+      "step": "decide",
+      "agent": "decide",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "propose",
+      "detail": "Propose decision from checks and policy"
+    },
+    {
+      "step": "critic",
+      "agent": "critic",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "review",
+      "detail": "Check proposal against evidence and checks"
+    },
+    {
+      "step": "critic",
+      "agent": "critic",
+      "model": null,
+      "action": "verdict",
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"E1 confirms ORD-1066 is a Digital licence, delivered 2026-10-18, total $39.00; E3 states R6 rejects delivered digital products unless defective; E2 shows no prior refunds. These match the Python checks (category Digital, delivered true, order_total 39.0, already_refunded false). The category-specific R6 correctly governs over the general changed_mind rule R1.\", \"decision\": \"reject\"}"
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "write",
+      "detail": "Write customer reply and explanation"
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": null,
+      "action": "reply",
+      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified order ORD-1066 is a digital product delivered on 2026-10-18\", \"evidence_id\": \"E1\", \"detail\": \"category Digital, delivered 2026-10-18, order total $39.00, final_sale false\"}, {\"step\": \"Checked refund history for customer C010 in the last 90 days\", \"evidence_id\": \"E2\", \"detail\": \"0 approved refunds found, no abuse flags apply\"}, {\"step\": \"Applied digital products policy R6: digital licences are non-refundable once delivered unless the product does not work\", \"evidence_id\": \"E3\", \"detail\": \"rule R6 outcome reject, category Digital, any reason type\"}]}"
+    },
+    {
+      "step": "orchestrator",
+      "agent": "orchestrator",
+      "model": null,
+      "action": "done",
+      "detail": "decision=reject confidence=0.95 model_calls=6/12"
+    }
+  ],
+  "model_calls": 6
+}
