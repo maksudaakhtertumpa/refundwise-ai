@@ -326,6 +326,10 @@ def main() -> None:
             "How it works: Scout Intent → Zetaris evidence → "
             "Nemotron agents → decision"
         )
+        st.caption(
+            f"Demo date: {DEMO_TODAY}. This is a fixed date for the synthetic data, "
+            "so every run gives the same result. It is not today's date."
+        )
 
     left, right = st.columns([1, 1.55], gap="large")
     with left:
