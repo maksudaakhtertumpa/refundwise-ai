@@ -27,6 +27,7 @@ def main() -> None:
             item["message"],
             item["customer_id"],
             demo_today=demo_today,
+            request_id=case_id,
         )
         out_path = out_dir / f"{case_id}.json"
         out_path.write_text(json.dumps(case.to_dict(), indent=2, default=str))

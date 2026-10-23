@@ -11,7 +11,6 @@ import streamlit as st
 
 ROOT = Path(__file__).resolve().parent
 REQUESTS_PATH = ROOT / "input_examples" / "requests.json"
-OUTPUTS_PATH = ROOT / "output_examples"
 DEMO_TODAY = "2026-10-25"
 CUSTOMERS = [f"C{number:03d}" for number in range(1, 13)]
 DECISION_STYLES = {
@@ -31,7 +30,7 @@ def load_requests() -> list[dict[str, Any]]:
 
 
 def case_dict(case: Any) -> dict[str, Any]:
-    """Convert either a CaseFile or replay payload to a plain dictionary."""
+    """Convert a CaseFile (or an already plain dict) to a plain dictionary."""
     if isinstance(case, dict):
         return case
     return case.to_dict()
@@ -318,10 +317,6 @@ def main() -> None:
             on_change=set_message_from_sample,
             args=(requests,),
         )
-        replay = st.toggle(
-            "Replay saved result",
-            help="Use the saved JSON result instead of running the live agent pipeline.",
-        )
         st.caption(
             "How it works: Scout Intent → Zetaris evidence → "
             "Nemotron agents → decision"
@@ -336,24 +331,16 @@ def main() -> None:
         st.subheader("Review request")
         st.text_area("Customer message", key="message_text", height=220)
         if st.button("Review request", type="primary", use_container_width=True):
-            selected = requests[st.session_state.sample_index]
-            if replay:
-                path = OUTPUTS_PATH / f"{selected['id']}.json"
-                try:
-                    st.session_state.case = json.loads(path.read_text())
-                except (OSError, json.JSONDecodeError) as exc:
-                    st.error(f"Could not load saved result: {exc}")
-            else:
-                from agent.orchestrator import run_case
+            from agent.orchestrator import run_case
 
-                with st.spinner("Reviewing request with RefundWise agents..."):
-                    st.session_state.case = case_dict(
-                        run_case(
-                            st.session_state.message_text,
-                            customer_id,
-                            demo_today=DEMO_TODAY,
-                        )
+            with st.spinner("Reviewing request with RefundWise agents (live)..."):
+                st.session_state.case = case_dict(
+                    run_case(
+                        st.session_state.message_text,
+                        customer_id,
+                        demo_today=DEMO_TODAY,
                     )
+                )
 
     with right:
         case = st.session_state.case

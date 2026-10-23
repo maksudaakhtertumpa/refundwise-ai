@@ -3,12 +3,24 @@
 from __future__ import annotations
 
 import json
+import secrets
 from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 _ROOT = Path(__file__).resolve().parents[1]
 _REQUESTS_PATH = _ROOT / "input_examples" / "requests.json"
+
+
+def utc_now() -> str:
+    """Current UTC time as an ISO 8601 string, for trace timestamps."""
+    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+def new_trace_id() -> str:
+    """A unique id per case, used for the log file name: trace-YYYYMMDD-HHMMSS-xxxxxx."""
+    return "trace-" + datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(3)
 
 
 def default_demo_today() -> str:
@@ -43,6 +55,7 @@ class TraceEvent:
     model: str | None
     action: str
     detail: str
+    timestamp: str = field(default_factory=utc_now)
 
 
 @dataclass
@@ -68,6 +81,9 @@ class CaseFile:
     model_calls: int = 0
     scout: dict[str, Any] = field(default_factory=dict)
     explanation: list[dict[str, Any]] = field(default_factory=list)
+    trace_id: str = field(default_factory=new_trace_id)
+    request_id: str | None = None
+    log_path: str | None = None
 
     def add_trace(
         self,

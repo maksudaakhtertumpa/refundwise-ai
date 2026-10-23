@@ -115,7 +115,8 @@ def _tool_loop(case: CaseFile, extra_request: str | None) -> bool:
                 step="evidence",
                 agent="evidence",
                 action="run_sql",
-                detail=f"{item.id} ok={payload.get('ok')} source={item.source}",
+                detail=f"{item.id} ok={payload.get('ok')} source={item.source}"
+                + ("" if payload.get("ok") else f" error={str(payload.get('error'))[:200]}"),
             )
             messages.append(
                 {
@@ -166,13 +167,15 @@ def _run_fallbacks(case: CaseFile, *, reason: str) -> None:
             source=source,
             sql=sql,
             rows=payload.get("rows") or [],
-            note=f"fallback ({reason}): {note}",
+            note=f"fallback ({reason}): {note}"
+            + ("" if payload.get("ok") else f" [query failed: {str(payload.get('error'))[:200]}]"),
         )
         case.add_trace(
             step="evidence",
             agent="evidence",
             action="fallback_sql",
-            detail=f"{item.id} {source} ok={payload.get('ok')}",
+            detail=f"{item.id} {source} ok={payload.get('ok')}"
+            + ("" if payload.get("ok") else f" error={str(payload.get('error'))[:200]}"),
         )
 
 

@@ -9,7 +9,7 @@
     {
       "id": "E1",
       "source": "shop_orders.orders",
-      "sql": "SELECT order_id, customer_id, order_date, delivery_date, product_name, category, unit_price, quantity, order_total, payment_method, status, final_sale\nFROM shop_orders.orders\nWHERE order_id = 'ORD-1017' AND customer_id = 'C007'",
+      "sql": "SELECT * FROM shop_orders.orders WHERE order_id = 'ORD-1017' AND customer_id = 'C007'",
       "rows": [
         {
           "order_id": "ORD-1017",
@@ -31,15 +31,24 @@
     {
       "id": "E2",
       "source": "support_desk.refund_history",
-      "sql": "SELECT refund_id, customer_id, order_id, request_date, amount, reason, decision\nFROM support_desk.refund_history\nWHERE customer_id = 'C007'",
+      "sql": "SELECT * FROM support_desk.refund_history WHERE customer_id = 'C007'",
       "rows": [],
       "note": "support_desk.refund_history"
     },
     {
       "id": "E3",
       "source": "policy_kb.refund_policy",
-      "sql": "SELECT rule_id, category, reason_type, window_days, auto_approve_limit, outcome, rule_text\nFROM policy_kb.refund_policy\nWHERE category = 'Electronics' AND reason_type = 'changed_mind'",
+      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Electronics' OR category = 'ALL'",
       "rows": [
+        {
+          "rule_id": "R1",
+          "category": "ALL",
+          "reason_type": "changed_mind",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Unused items may be returned for a full refund within 30 days of delivery."
+        },
         {
           "rule_id": "R2",
           "category": "Electronics",
@@ -48,6 +57,69 @@
           "auto_approve_limit": "200.00",
           "outcome": "approve",
           "rule_text": "Electronics change-of-mind returns are accepted only within 15 days of delivery and must be unopened."
+        },
+        {
+          "rule_id": "R3",
+          "category": "ALL",
+          "reason_type": "defective",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Items that arrive damaged or defective are refunded in full within 30 days of delivery; a photo is requested."
+        },
+        {
+          "rule_id": "R4",
+          "category": "ALL",
+          "reason_type": "not_received",
+          "window_days": "14",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "If an order has not been delivered 14 days after the order date, the customer may choose a refund or a replacement."
+        },
+        {
+          "rule_id": "R5",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "Items marked final sale cannot be refunded unless they are defective."
+        },
+        {
+          "rule_id": "R7",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "200.00",
+          "outcome": "human_review",
+          "rule_text": "Any refund above 200.00 must be reviewed by a support lead before approval."
+        },
+        {
+          "rule_id": "R8",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "90",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse."
+        },
+        {
+          "rule_id": "R9",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "An order can be refunded only once. Requests for an order that was already refunded are rejected."
+        },
+        {
+          "rule_id": "R10",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "When the customer's claim conflicts with order or carrier records, the case goes to human review."
         }
       ],
       "note": "policy_kb.refund_policy"
@@ -75,16 +147,16 @@
       "R2"
     ],
     "confidence": 1.0,
-    "rationale": "Per R2, Electronics change-of-mind returns are accepted only within 15 days of delivery. E1 shows ORD-1017 (Wireless Headphones, Electronics) was delivered on 2026-08-20, and today is 2026-10-25, which is 66 days since delivery, far beyond the 15-day window. E3 confirms R2's 15-day window for Electronics change-of-mind returns.",
+    "rationale": "ORD-1017 is an Electronics order delivered 2026-08-20 (E1); with demo_today 2026-10-25, days_since_delivery is 66. R2 allows Electronics change-of-mind returns only within 15 days of delivery (R1 allows 30 days generally), so the request is outside the applicable window. The order is not final sale, not already refunded, under $200, and has no prior refunds (E1, E2), but no change-of-mind approval rule applies after the window has lapsed.",
     "evidence_ids": [
       "E1",
-      "E3"
+      "E2"
     ]
   },
   "critique": {
     "verdict": "accept",
     "missing_evidence": "",
-    "reason": "All factual claims in the proposal are directly supported by evidence E1 (order delivered 2026-08-20, category Electronics, total $149) and E3 (R2: 15-day window for Electronics change-of-mind returns). Python checks confirm days_since_delivery=66, which exceeds the 15-day window, and agree with the reject decision. No conflicts or missing data.",
+    "reason": "All factual claims are supported by evidence ids and match the Python checks: ORD-1017 is Electronics delivered 2026-08-20 (E1), days_since_delivery is 66 (checks), R2 sets a 15-day Electronics change-of-mind window (E3), R1 sets a 30-day general window (E3), the order is not final sale, not already refunded, $149.00 total, and has zero prior refunds (E1, E2, checks). Since 66 days exceeds the 15-day window, the reject decision under R2 is correct.",
     "issues": []
   },
   "decision": "reject",
@@ -92,9 +164,9 @@
   "rules_applied": [
     "R2"
   ],
-  "customer_reply": "Thank you for writing in. We are unable to refund this order under the current refund policy.",
+  "customer_reply": "We're sorry you're not satisfied with the wireless headphones from order ORD-1017. Unfortunately, change-of-mind returns for Electronics items must be requested within 15 days of delivery, and your order was delivered on August 20, 2026, which is beyond that window. We hope you'll consider our other products in the future.",
   "limitations": [
-    "Automated reply; reporter model did not return JSON."
+    "Could not verify whether the headphones were unopened, as required by policy for Electronics change-of-mind returns."
   ],
   "trace": [
     {
@@ -102,119 +174,128 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"refund.request\", \"score\": 0.924, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5KFCSK248ZGW4T0W1ZCB90E\", \"latencyMs\": 4.8305}"
+      "detail": "{\"intent\": \"refund.request\", \"score\": 0.924, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5KWE5DHM7V4KWWPEEK8D5AK\", \"latencyMs\": 5.5685}",
+      "timestamp": "2026-10-23T08:01:02.904Z"
     },
     {
       "step": "scout",
       "agent": "executor",
       "model": null,
       "action": "contract.verified",
-      "detail": "agent.review: ok"
+      "detail": "agent.review: ok",
+      "timestamp": "2026-10-23T08:01:02.904Z"
     },
     {
       "step": "intake",
       "agent": "intake",
       "model": null,
       "action": "skipped",
-      "detail": "Scout contract already bound order_id=ORD-1017 reason_type=changed_mind"
+      "detail": "Scout contract already bound order_id=ORD-1017 reason_type=changed_mind",
+      "timestamp": "2026-10-23T08:01:02.904Z"
     },
     {
       "step": "evidence",
       "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
-      "detail": "Collect order, history, policy"
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-23T08:01:05.774Z"
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": null,
       "action": "run_sql",
-      "detail": "E1 ok=True source=shop_orders.orders"
+      "detail": "E1 ok=True source=shop_orders.orders",
+      "timestamp": "2026-10-23T08:01:06.476Z"
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "tool_round",
-      "detail": "Collect order, history, policy"
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-23T08:01:08.965Z"
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": null,
       "action": "run_sql",
-      "detail": "E2 ok=True source=support_desk.refund_history"
+      "detail": "E2 ok=True source=support_desk.refund_history",
+      "timestamp": "2026-10-23T08:01:09.298Z"
     },
     {
       "step": "evidence",
       "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
-      "detail": "Collect order, history, policy"
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-23T08:01:10.251Z"
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": null,
       "action": "run_sql",
-      "detail": "E3 ok=True source=policy_kb.refund_policy"
+      "detail": "E3 ok=True source=policy_kb.refund_policy",
+      "timestamp": "2026-10-23T08:01:10.605Z"
     },
     {
       "step": "checks",
       "agent": "checks",
       "model": null,
       "action": "compute",
-      "detail": "{'days_since_delivery': 66, 'days_since_order': 70, 'delivered': True, 'order_total': 149.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-08-20', 'order_date': '2026-08-16', 'order_found': True, 'order_belongs_to_customer': True}"
+      "detail": "{'days_since_delivery': 66, 'days_since_order': 70, 'delivered': True, 'order_total': 149.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-08-20', 'order_date': '2026-08-16', 'order_found': True, 'order_belongs_to_customer': True}",
+      "timestamp": "2026-10-23T08:01:10.605Z"
     },
     {
       "step": "decide",
       "agent": "decide",
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "propose",
-      "detail": "Propose decision from checks and policy"
+      "detail": "Propose decision from checks and policy",
+      "timestamp": "2026-10-23T08:01:55.636Z"
     },
     {
       "step": "critic",
       "agent": "critic",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "review",
-      "detail": "Check proposal against evidence and checks"
+      "detail": "Check proposal against evidence and checks",
+      "timestamp": "2026-10-23T08:02:40.675Z"
     },
     {
       "step": "critic",
       "agent": "critic",
       "model": null,
       "action": "verdict",
-      "detail": "{\"verdict\": \"accept\", \"reason\": \"All factual claims in the proposal are directly supported by evidence E1 (order delivered 2026-08-20, category Electronics, total $149) and E3 (R2: 15-day window for Electronics change-of-mind returns). Python checks confirm days_since_delivery=66, which exceeds the 15-day window, and agree with the reject decision. No conflicts or missing data.\", \"decision\": \"reject\"}"
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"All factual claims are supported by evidence ids and match the Python checks: ORD-1017 is Electronics delivered 2026-08-20 (E1), days_since_delivery is 66 (checks), R2 sets a 15-day Electronics change-of-mind window (E3), R1 sets a 30-day general window (E3), the order is not final sale, not already refunded, $149.00 total, and has zero prior refunds (E1, E2, checks). Since 66 days exceeds the 15-day window, the reject decision under R2 is correct.\", \"decision\": \"reject\"}",
+      "timestamp": "2026-10-23T08:02:40.675Z"
     },
     {
       "step": "reporter",
       "agent": "reporter",
       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "write",
-      "detail": "Write customer reply and explanation"
-    },
-    {
-      "step": "reporter",
-      "agent": "reporter",
-      "model": null,
-      "action": "fallback_text",
-      "detail": "Used template reply after invalid JSON"
+      "detail": "Write customer reply and explanation",
+      "timestamp": "2026-10-23T08:03:31.663Z"
     },
     {
       "step": "reporter",
       "agent": "reporter",
       "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"shop_orders.orders\", \"evidence_id\": \"E1\", \"detail\": \"shop_orders.orders\"}, {\"step\": \"support_desk.refund_history\", \"evidence_id\": \"E2\", \"detail\": \"support_desk.refund_history\"}, {\"step\": \"policy_kb.refund_policy\", \"evidence_id\": \"E3\", \"detail\": \"policy_kb.refund_policy\"}]}"
+      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified delivery date, category, order total, and final\\u2011sale status.\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1017 delivered 2026-08-20, category Electronics, order total $149.00, final_sale false.\"}, {\"step\": \"Checked refund history for prior refunds in the last 90 days.\", \"evidence_id\": \"E2\", \"detail\": \"No approved refunds found for customer C007 in the last 90 days.\"}, {\"step\": \"Applied Electronics change-of-mind policy (15\\u2011day window).\", \"evidence_id\": \"E3\", \"detail\": \"Policy allows Electronics change-of-mind returns only within 15 days of delivery; 66 days since delivery exceeds this window, making the refund ineligible.\"}]}",
+      "timestamp": "2026-10-23T08:03:31.663Z"
     },
     {
       "step": "orchestrator",
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=reject confidence=1.0 model_calls=6/12"
+      "detail": "decision=reject confidence=1.0 model_calls=6/12",
+      "timestamp": "2026-10-23T08:03:31.663Z"
     }
   ],
   "model_calls": 6,
@@ -241,25 +322,28 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5KFCSK248ZGW4T0W1ZCB90E",
+    "contractId": "01M5KWE5DHM7V4KWWPEEK8D5AK",
     "clarification": null,
-    "latencyMs": 4.8305
+    "latencyMs": 5.5685
   },
   "explanation": [
     {
-      "step": "shop_orders.orders",
+      "step": "Verified delivery date, category, order total, and final\u2011sale status.",
       "evidence_id": "E1",
-      "detail": "shop_orders.orders"
+      "detail": "Order ORD-1017 delivered 2026-08-20, category Electronics, order total $149.00, final_sale false."
     },
     {
-      "step": "support_desk.refund_history",
+      "step": "Checked refund history for prior refunds in the last 90 days.",
       "evidence_id": "E2",
-      "detail": "support_desk.refund_history"
+      "detail": "No approved refunds found for customer C007 in the last 90 days."
     },
     {
-      "step": "policy_kb.refund_policy",
+      "step": "Applied Electronics change-of-mind policy (15\u2011day window).",
       "evidence_id": "E3",
-      "detail": "policy_kb.refund_policy"
+      "detail": "Policy allows Electronics change-of-mind returns only within 15 days of delivery; 66 days since delivery exceeds this window, making the refund ineligible."
     }
-  ]
+  ],
+  "trace_id": "trace-20261023-080102-eb0a0c",
+  "request_id": "S2",
+  "log_path": "logs/trace-20261023-080102-eb0a0c.jsonl"
 }

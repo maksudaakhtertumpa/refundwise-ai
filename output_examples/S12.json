@@ -22,14 +22,16 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"GENERAL\", \"score\": 0, \"band\": \"reject\", \"risk\": \"low\", \"flags\": [], \"contract\": null, \"latencyMs\": 3.0353}"
+      "detail": "{\"intent\": \"GENERAL\", \"score\": 0, \"band\": \"reject\", \"risk\": \"low\", \"flags\": [], \"contract\": null, \"latencyMs\": 3.0494}",
+      "timestamp": "2026-10-23T08:25:33.304Z"
     },
     {
       "step": "orchestrator",
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=needs_info routed_by=scout intent=GENERAL model_calls=0"
+      "detail": "decision=needs_info routed_by=scout intent=GENERAL model_calls=0",
+      "timestamp": "2026-10-23T08:25:33.304Z"
     }
   ],
   "model_calls": 0,
@@ -69,7 +71,10 @@
         }
       ]
     },
-    "latencyMs": 3.0353
+    "latencyMs": 3.0494
   },
-  "explanation": []
+  "explanation": [],
+  "trace_id": "trace-20261023-082533-f11735",
+  "request_id": "S12",
+  "log_path": "logs/trace-20261023-082533-f11735.jsonl"
 }

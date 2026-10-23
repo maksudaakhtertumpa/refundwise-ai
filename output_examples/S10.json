@@ -36,21 +36,24 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"order.status\", \"score\": 0.9088, \"band\": \"high\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5KGNY5ANZGBHJKEQDJ5KNFT\", \"latencyMs\": 4.042}"
+      "detail": "{\"intent\": \"order.status\", \"score\": 0.9088, \"band\": \"high\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5KXTZST54Q6069GEX4GVPHS\", \"latencyMs\": 3.5117}",
+      "timestamp": "2026-10-23T08:25:31.709Z"
     },
     {
       "step": "scout",
       "agent": "executor",
       "model": null,
       "action": "contract.verified",
-      "detail": "order.lookup: ok"
+      "detail": "order.lookup: ok",
+      "timestamp": "2026-10-23T08:25:31.710Z"
     },
     {
       "step": "orchestrator",
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=answered routed_by=scout intent=order.status model_calls=0"
+      "detail": "decision=answered routed_by=scout intent=order.status model_calls=0",
+      "timestamp": "2026-10-23T08:25:32.628Z"
     }
   ],
   "model_calls": 0,
@@ -72,9 +75,12 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5KGNY5ANZGBHJKEQDJ5KNFT",
+    "contractId": "01M5KXTZST54Q6069GEX4GVPHS",
     "clarification": null,
-    "latencyMs": 4.042
+    "latencyMs": 3.5117
   },
-  "explanation": []
+  "explanation": [],
+  "trace_id": "trace-20261023-082531-6e014a",
+  "request_id": "S10",
+  "log_path": "logs/trace-20261023-082531-6e014a.jsonl"
 }

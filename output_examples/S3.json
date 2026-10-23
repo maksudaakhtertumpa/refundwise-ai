@@ -38,8 +38,17 @@
     {
       "id": "E3",
       "source": "policy_kb.refund_policy",
-      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Electronics'",
+      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Electronics' OR category = 'ALL'",
       "rows": [
+        {
+          "rule_id": "R1",
+          "category": "ALL",
+          "reason_type": "changed_mind",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Unused items may be returned for a full refund within 30 days of delivery."
+        },
         {
           "rule_id": "R2",
           "category": "Electronics",
@@ -48,6 +57,69 @@
           "auto_approve_limit": "200.00",
           "outcome": "approve",
           "rule_text": "Electronics change-of-mind returns are accepted only within 15 days of delivery and must be unopened."
+        },
+        {
+          "rule_id": "R3",
+          "category": "ALL",
+          "reason_type": "defective",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Items that arrive damaged or defective are refunded in full within 30 days of delivery; a photo is requested."
+        },
+        {
+          "rule_id": "R4",
+          "category": "ALL",
+          "reason_type": "not_received",
+          "window_days": "14",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "If an order has not been delivered 14 days after the order date, the customer may choose a refund or a replacement."
+        },
+        {
+          "rule_id": "R5",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "Items marked final sale cannot be refunded unless they are defective."
+        },
+        {
+          "rule_id": "R7",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "200.00",
+          "outcome": "human_review",
+          "rule_text": "Any refund above 200.00 must be reviewed by a support lead before approval."
+        },
+        {
+          "rule_id": "R8",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "90",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse."
+        },
+        {
+          "rule_id": "R9",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "An order can be refunded only once. Requests for an order that was already refunded are rejected."
+        },
+        {
+          "rule_id": "R10",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "When the customer's claim conflicts with order or carrier records, the case goes to human review."
         }
       ],
       "note": "policy_kb.refund_policy"
@@ -72,25 +144,19 @@
   "proposed_decision": {
     "decision": "human_review",
     "rules_applied": [
-      "R3",
       "R7"
     ],
     "confidence": 1.0,
-    "rationale": "The item is defective and was delivered 10 days ago (within 30 days), so R3 applies, but the order_total is 1249.00, which exceeds the 200.00 auto-approve limit; per R7, orders over 200 require human review and cannot be auto-approved. E1 confirms delivery_date 2026-10-15, order_total 1249.00, category Electronics, and status delivered.",
+    "rationale": "The order total of 1249.00 exceeds the 200.00 auto-approve threshold, so R7 mandates support lead review despite the defective claim under R3 and the 10-day delivery window. Checks confirm over_auto_limit: true (E1).",
     "evidence_ids": [
       "E1"
     ]
   },
   "critique": {
     "verdict": "accept",
-    "missing_evidence": "policy_kb.refund_policy rows for rule R3 (defective reason_type: window_days, auto_approve_limit, outcome) and rule R7",
+    "missing_evidence": "",
     "reason": "Order total exceeds the 200.00 auto-approve limit.",
-    "issues": [
-      "R3 and R7 not present in provided evidence",
-      "30-day defective window unsupported by evidence",
-      "$200 auto-approve limit attributed to R7 but E3 ties it to R2",
-      "evidence_ids omits policy evidence needed for the rationale"
-    ],
+    "issues": [],
     "hard_guard": {
       "decision": "human_review",
       "rule": "R7",
@@ -100,12 +166,12 @@
   "decision": "human_review",
   "confidence": 1.0,
   "rules_applied": [
-    "R3",
     "R7"
   ],
-  "customer_reply": "Thank you for writing in. A support lead will review this request and contact you shortly.",
+  "customer_reply": "I'm sorry to hear your 14in Ultrabook Laptop won't turn on. I've confirmed your order ORD-1055 was delivered on October 15, 2026, and is within the defective-item return window. Because the order total exceeds our automatic approval limit, a support lead will review your refund request and contact you shortly with next steps.",
   "limitations": [
-    "Automated reply; reporter model did not return JSON."
+    "Could not independently verify the physical condition of the laptop beyond the customer's report.",
+    "No photo of the defect was provided, which policy R3 requests for defective items."
   ],
   "trace": [
     {
@@ -113,119 +179,128 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"refund.request\", \"score\": 0.9502, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5KFJ1F9THWXRJMEWAMM6F44\", \"latencyMs\": 5.2907}"
+      "detail": "{\"intent\": \"refund.request\", \"score\": 0.9502, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5KWJPT6SW0G72BFN1CJXADK\", \"latencyMs\": 5.4386}",
+      "timestamp": "2026-10-23T08:03:31.792Z"
     },
     {
       "step": "scout",
       "agent": "executor",
       "model": null,
       "action": "contract.verified",
-      "detail": "agent.review: ok"
+      "detail": "agent.review: ok",
+      "timestamp": "2026-10-23T08:03:31.792Z"
     },
     {
       "step": "intake",
       "agent": "intake",
       "model": null,
       "action": "skipped",
-      "detail": "Scout contract already bound order_id=ORD-1055 reason_type=defective"
+      "detail": "Scout contract already bound order_id=ORD-1055 reason_type=defective",
+      "timestamp": "2026-10-23T08:03:31.792Z"
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
-      "detail": "Collect order, history, policy"
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-23T08:03:33.465Z"
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": null,
       "action": "run_sql",
-      "detail": "E1 ok=True source=shop_orders.orders"
+      "detail": "E1 ok=True source=shop_orders.orders",
+      "timestamp": "2026-10-23T08:03:34.047Z"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-23T08:03:34.852Z"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E2 ok=True source=support_desk.refund_history",
+      "timestamp": "2026-10-23T08:03:35.114Z"
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "tool_round",
-      "detail": "Collect order, history, policy"
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-23T08:03:36.868Z"
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": null,
       "action": "run_sql",
-      "detail": "E2 ok=True source=support_desk.refund_history"
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-      "action": "tool_round",
-      "detail": "Collect order, history, policy"
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": null,
-      "action": "run_sql",
-      "detail": "E3 ok=True source=policy_kb.refund_policy"
+      "detail": "E3 ok=True source=policy_kb.refund_policy",
+      "timestamp": "2026-10-23T08:03:37.167Z"
     },
     {
       "step": "checks",
       "agent": "checks",
       "model": null,
       "action": "compute",
-      "detail": "{'days_since_delivery': 10, 'days_since_order': 13, 'delivered': True, 'order_total': 1249.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': True, 'order_status': 'delivered', 'delivery_date': '2026-10-15', 'order_date': '2026-10-12', 'order_found': True, 'order_belongs_to_customer': True}"
+      "detail": "{'days_since_delivery': 10, 'days_since_order': 13, 'delivered': True, 'order_total': 1249.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': True, 'order_status': 'delivered', 'delivery_date': '2026-10-15', 'order_date': '2026-10-12', 'order_found': True, 'order_belongs_to_customer': True}",
+      "timestamp": "2026-10-23T08:03:37.167Z"
     },
     {
       "step": "decide",
       "agent": "decide",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "propose",
-      "detail": "Propose decision from checks and policy"
+      "detail": "Propose decision from checks and policy",
+      "timestamp": "2026-10-23T08:04:14.909Z"
     },
     {
       "step": "critic",
       "agent": "critic",
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "review",
-      "detail": "Check proposal against evidence and checks"
+      "detail": "Check proposal against evidence and checks",
+      "timestamp": "2026-10-23T08:07:07.721Z"
     },
     {
       "step": "critic",
       "agent": "critic",
       "model": null,
       "action": "verdict",
-      "detail": "{\"verdict\": \"accept\", \"reason\": \"Order total exceeds the 200.00 auto-approve limit.\", \"decision\": \"human_review\"}"
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"Order total exceeds the 200.00 auto-approve limit.\", \"decision\": \"human_review\"}",
+      "timestamp": "2026-10-23T08:07:07.722Z"
     },
     {
       "step": "reporter",
       "agent": "reporter",
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "write",
-      "detail": "Write customer reply and explanation"
-    },
-    {
-      "step": "reporter",
-      "agent": "reporter",
-      "model": null,
-      "action": "fallback_text",
-      "detail": "Used template reply after invalid JSON"
+      "detail": "Write customer reply and explanation",
+      "timestamp": "2026-10-23T08:07:52.789Z"
     },
     {
       "step": "reporter",
       "agent": "reporter",
       "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"shop_orders.orders\", \"evidence_id\": \"E1\", \"detail\": \"shop_orders.orders\"}, {\"step\": \"support_desk.refund_history\", \"evidence_id\": \"E2\", \"detail\": \"support_desk.refund_history\"}, {\"step\": \"policy_kb.refund_policy\", \"evidence_id\": \"E3\", \"detail\": \"policy_kb.refund_policy\"}]}"
+      "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"Checked the order record for ORD-1055\", \"evidence_id\": \"E1\", \"detail\": \"Order for customer C011, 14in Ultrabook Laptop (Electronics), ordered 2026-10-12, delivered 2026-10-15, total $1249.00, not final sale, status delivered.\"}, {\"step\": \"Checked refund history for customer C011\", \"evidence_id\": \"E2\", \"detail\": \"No prior refunds found for this customer or order in the last 90 days.\"}, {\"step\": \"Compared defective claim with order total and policy rules\", \"evidence_id\": \"E1, E2, E3\", \"detail\": \"Policy R3 covers defective items within 30 days, but R7 mandates support lead review for refunds above $200.00; order total $1249.00 exceeds this limit, so the case is set for human review.\"}]}",
+      "timestamp": "2026-10-23T08:07:52.789Z"
     },
     {
       "step": "orchestrator",
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=human_review confidence=1.0 model_calls=6/12"
+      "detail": "decision=human_review confidence=1.0 model_calls=6/12",
+      "timestamp": "2026-10-23T08:07:52.789Z"
     }
   ],
   "model_calls": 6,
@@ -252,25 +327,28 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5KFJ1F9THWXRJMEWAMM6F44",
+    "contractId": "01M5KWJPT6SW0G72BFN1CJXADK",
     "clarification": null,
-    "latencyMs": 5.2907
+    "latencyMs": 5.4386
   },
   "explanation": [
     {
-      "step": "shop_orders.orders",
+      "step": "Checked the order record for ORD-1055",
       "evidence_id": "E1",
-      "detail": "shop_orders.orders"
+      "detail": "Order for customer C011, 14in Ultrabook Laptop (Electronics), ordered 2026-10-12, delivered 2026-10-15, total $1249.00, not final sale, status delivered."
     },
     {
-      "step": "support_desk.refund_history",
+      "step": "Checked refund history for customer C011",
       "evidence_id": "E2",
-      "detail": "support_desk.refund_history"
+      "detail": "No prior refunds found for this customer or order in the last 90 days."
     },
     {
-      "step": "policy_kb.refund_policy",
-      "evidence_id": "E3",
-      "detail": "policy_kb.refund_policy"
+      "step": "Compared defective claim with order total and policy rules",
+      "evidence_id": "E1, E2, E3",
+      "detail": "Policy R3 covers defective items within 30 days, but R7 mandates support lead review for refunds above $200.00; order total $1249.00 exceeds this limit, so the case is set for human review."
     }
-  ]
+  ],
+  "trace_id": "trace-20261023-080331-00472e",
+  "request_id": "S3",
+  "log_path": "logs/trace-20261023-080331-00472e.jsonl"
 }

@@ -158,7 +158,12 @@ def _answer_status(case: CaseFile, order_id: str | None) -> None:
     res = run_sql(sql)
     item = case.add_evidence(source="shop_orders.orders", sql=sql, rows=res.get("rows", []), note="order status")
     case.order_id = order_id
-    if not res.get("ok") or not res.get("rows"):
+    if not res.get("ok"):
+        _finish(case, "human_review", 0.0,
+                "Sorry, I can't look up your order right now. A support lead will get back to you shortly.",
+                limitation=f"Order lookup failed: {res.get('error')}")
+        return
+    if not res.get("rows"):
         _finish(case, "needs_info", None, f"I couldn't find {order_id} on your account. Could you check the order number?")
         return
     row = res["rows"][0]
@@ -175,6 +180,11 @@ def _answer_policy(case: CaseFile) -> None:
     res = run_sql(sql)
     rows = res.get("rows", [])
     item = case.add_evidence(source="policy_kb.refund_policy", sql=sql, rows=rows, note="policy question")
+    if not res.get("ok") or not rows:
+        _finish(case, "human_review", 0.0,
+                "Sorry, I can't look up our refund policy right now. A support lead will answer your question shortly.",
+                limitation=f"Policy lookup failed: {res.get('error') or 'no rows'}")
+        return
     text = case.message.lower()
     picked = [r for r in rows if r.get("category", "ALL").lower() != "all" and r["category"].lower().split()[0] in text]
     picked += [r for r in rows if r.get("rule_id") in {"R1", "R3"}]

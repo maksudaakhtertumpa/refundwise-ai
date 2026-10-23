@@ -22,14 +22,16 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"policy.question\", \"score\": 0.8976, \"band\": \"high\", \"risk\": \"block\", \"flags\": [\"injection\"], \"contract\": null, \"latencyMs\": 1.9731}"
+      "detail": "{\"intent\": \"policy.question\", \"score\": 0.8976, \"band\": \"high\", \"risk\": \"block\", \"flags\": [\"injection\"], \"contract\": null, \"latencyMs\": 1.9835}",
+      "timestamp": "2026-10-23T08:25:31.662Z"
     },
     {
       "step": "orchestrator",
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=refused routed_by=scout intent=policy.question model_calls=0"
+      "detail": "decision=refused routed_by=scout intent=policy.question model_calls=0",
+      "timestamp": "2026-10-23T08:25:31.662Z"
     }
   ],
   "model_calls": 0,
@@ -51,7 +53,10 @@
     "modelProfile": null,
     "contractId": null,
     "clarification": null,
-    "latencyMs": 1.9731
+    "latencyMs": 1.9835
   },
-  "explanation": []
+  "explanation": [],
+  "trace_id": "trace-20261023-082531-b7b069",
+  "request_id": "S9",
+  "log_path": "logs/trace-20261023-082531-b7b069.jsonl"
 }

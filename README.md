@@ -107,10 +107,11 @@ cp .env.example .env        # then fill in your own values; never commit .env
 
 ### Option A: quick start without Zetaris or Nightshift (SAMPLE_MODE)
 
-`SAMPLE_MODE=true` replaces Zetaris with a SQLite copy of the CSV snapshot in `data/`. The model still runs through Nightshift; to explore without any model, use "Replay saved result" in the UI.
+`SAMPLE_MODE=true` replaces Zetaris with a SQLite copy of the CSV snapshot in `data/`. It loads sample **input data only**, never saved answers. Without Nightshift, Scout routing, order status, policy questions and injection blocking still work fully. Refund cases still collect evidence and run the Python checks, then fall back to the deterministic policy guards (R7–R10) or human review. They never auto-approve without the model.
 
 ```bash
-SAMPLE_MODE=true .venv/bin/python -m unittest discover tests -v   # 9 tests, no services needed
+SAMPLE_MODE=true .venv/bin/python -m unittest discover tests -v   # 15 tests, no services needed
+SAMPLE_MODE=true .venv/bin/python run.py --input input_examples/example_3.json
 SAMPLE_MODE=true .venv/bin/streamlit run app.py --server.address localhost
 ```
 
@@ -141,13 +142,67 @@ SAMPLE_MODE=true .venv/bin/streamlit run app.py --server.address localhost
 
 ## Usage
 
+**Entry point (no UI)**
+
+`run.py` runs one request and prints the JSON response. It can read a file, take arguments, or serve `POST /run`:
+
+```bash
+.venv/bin/python run.py --input input_examples/example_1.json
+.venv/bin/python run.py --customer C003 --message "My shoes from ORD-1042 arrived broken"
+.venv/bin/python run.py --serve --port 8000
+curl -s -X POST http://localhost:8000/run -H "Content-Type: application/json" -d @input_examples/example_1.json
+```
+
+Request:
+
+```json
+{"request_id": "example-001", "customer_id": "C003",
+ "user_query": "Hi, my trail running shoes from order ORD-1042 arrived with the sole coming off. Can I get a refund please?"}
+```
+
+Response (shortened):
+
+```json
+{
+  "request_id": "example-001",
+  "trace_id": "trace-20261025-101500-3fa2c1",
+  "status": "success",
+  "route": "refund.request",
+  "agents_used": ["scout-intent", "executor", "evidence", "checks", "decide", "critic", "reporter", "orchestrator"],
+  "result": {"decision": "approve", "confidence": 1.0, "rules_applied": ["R3"],
+             "customer_reply": "...", "explanation": [{"step": "...", "evidence_id": "E1", "detail": "..."}]},
+  "evidence": [{"id": "E1", "source": "shop_orders.orders", "sql": "SELECT ... WHERE customer_id = 'C003' ...", "row_count": 1}],
+  "collaboration": {"feedback_loop_completed": true, "critic_verdict": "accept", "revision_count": 0},
+  "model_calls": 5,
+  "models_used": {"nvidia/nemotron-3.5-lightning-30b-a3b": 4, "nvidia/nemotron-3.5-super-vl-120b-a12b": 1},
+  "log_path": "logs/trace-20261025-101500-3fa2c1.jsonl"
+}
+```
+
+The numbers, the models and the ids come from each real run.
+
+**Logs**
+
+Every case writes `logs/<trace_id>.jsonl` and echoes it to stdout (set `TRACE_STDOUT=false` to silence it). Each line has `timestamp`, `trace_id`, `request_id`, `agent_name`, `action`, `model` (as reported by Nightshift), `status` (`ok`, `blocked`, `refused`, `fallback`, `error` …), `target_agent` (who acts next) and `detail`. A refund case reads like this:
+
+```
+scout-intent  decide            -> executor      intent refund.request, contract issued
+executor      contract.verified -> intake        agent.review: ok
+evidence      tool_round        (Lightning)      the model asks for order, history and policy SQL
+evidence      run_sql           -> checks        E1 shop_orders.orders ...
+decide        propose           (Super)          proposed decision with rules and evidence ids
+critic        review / verdict  -> orchestrator  accept, or revise with the missing evidence
+orchestrator  revise            -> evidence      (only on revise; at most 2 rounds)
+reporter      write             -> orchestrator  reply and cited explanation
+```
+
 **Web UI**
 
 ```bash
 .venv/bin/streamlit run app.py --server.address localhost
 ```
 
-Pick a demo scenario or type your own message. The page shows the decision and confidence, the customer reply, Scout's intent, band, risk and tool plan, the evidence trail with the exact SQL, the cited "why", the Python checks, and an agent timeline showing which Nemotron model handled each step. `--server.address localhost` keeps the app off your local network.
+Pick a demo scenario or type your own message. Every click runs the live pipeline. The page shows the decision and confidence, the customer reply, Scout's intent, band, risk and tool plan, the evidence trail with the exact SQL, the cited "why", the Python checks, and an agent timeline showing which Nemotron model handled each step. `--server.address localhost` keeps the app off your local network.
 
 **Command line: run all 12 scenarios**
 
@@ -155,12 +210,21 @@ Pick a demo scenario or type your own message. The page shows the decision and c
 .venv/bin/python scripts/run_demo.py
 ```
 
-This prints a results table and writes one JSON case file per scenario to `output_examples/`. Each file contains the full trace, evidence and model names.
+This prints a results table, writes one JSON case file per scenario to `output_examples/`, and writes a trace per scenario to `logs/`. The files in `output_examples/` are records of real runs. **No runtime code reads them**, and a test checks this.
+
+**Docker**
+
+```bash
+docker build -t refundwise .
+docker run --rm -p 8000:8000 --env-file .env -e SAMPLE_MODE=true refundwise
+```
+
+Inside the container, `localhost` is the container itself. To reach Zetaris and Nightshift on your machine, set `ZETARIS_REST_URL=http://host.docker.internal:8888/api/v1.0` and `METERLESS_BASE_URL=http://host.docker.internal:8088/v1` (for example with extra `-e` flags). The image never contains `.env`.
 
 **Tests**
 
 ```bash
-.venv/bin/python -m unittest discover tests -v   # SQL safety, customer scope, checks, guards, contracts
+.venv/bin/python -m unittest discover tests -v   # 15 tests: SQL safety, scope, guards, contracts, entry point, logs, no secrets, no output_examples at runtime
 bash scripts/run_scout_evals.sh                  # Scout Intent: official harness + regression + feature tests
 ```
 
@@ -173,6 +237,7 @@ agent/            multi-agent pipeline
   router.py       Scout Intent routing (runs first)
   scout_gate.py   calls scout/cli.js, verifies the signed contract
   orchestrator.py intake → evidence → checks → decide ⇄ critic → reporter
+  tracing.py      JSONL trace logs (logs/ and stdout)
   evidence.py     tool-calling SQL agent with customer scoping
   checks.py       deterministic policy facts
   critic.py       critic agent + hard guards R7–R10
@@ -180,8 +245,10 @@ agent/            multi-agent pipeline
   llm.py          Nightshift client, lanes, timeouts, fast-lane retry
 scout/            Meterless Scout Intent engine (Node, no dependencies)
 data/             synthetic CSVs, Postgres seed, Zetaris registration SQL
-input_examples/   12 demo scenarios with expected outcomes
-output_examples/  saved case files from the last demo run
+input_examples/   requests.json (12 scenarios with expected outcomes) and example_1..3.json for run.py
+output_examples/  records of the last demo run (never read at runtime)
+logs/             JSONL traces, one file per case
+run.py            entry point: CLI and POST /run
 scripts/          data loading, demo runner, connection tests, Scout evals
 tests/            unit tests (no services needed)
 app.py            Streamlit UI
@@ -201,6 +268,28 @@ All data is synthetic, generated by `scripts/gen_data.py` with a fixed seed: 48 
 - Scout runs Stage 1 (lexical) only. New phrasings it is unsure about become a clarifying question rather than a wrong action, which is the spec's intended safe behaviour. See [scout/README.md](scout/README.md).
 - The contract HMAC protects integrity between Scout and the executor. It does not replace user authentication; in this demo the customer id is selected in the UI.
 - The policy has 10 rules and the dataset is small. This is a working prototype, not a production system.
+
+## Agent roles
+
+| Agent | Role (planner / executor / evaluator) | Model |
+|---|---|---|
+| Scout Intent | Planner: decides what is being asked, binds the order and reason, plans the tools, signs the contract | none (deterministic engine) |
+| Intake | Planner: extracts the order and reason when Scout could not bind them | Lightning (fast lane) |
+| Evidence | Executor: tool-calling agent that writes customer-scoped SQL for Zetaris | Lightning (fast lane) |
+| Checks | Executor: computes the policy facts in Python | none |
+| Decide | Executor: proposes a decision with rules and evidence ids | Super (deep lane) |
+| Critic | Evaluator: checks every claim against the evidence and checks; can send the case back for more evidence | Super (deep lane) |
+| Hard guards | Evaluator: code rules R7–R10 that override the model | none |
+| Reporter | Writes the customer reply and the cited "why" | Lightning (fast lane) |
+
+The feedback loop: if the critic says *revise*, the orchestrator sends its request back to the evidence agent, the checks run again, and decide proposes again (at most 2 rounds, then human review).
+
+## Pre-existing components
+
+- **Built during the hackathon (22–27 Oct 2026):** all of `agent/`, `scout/`, `app.py`, `run.py`, the synthetic data, the tests and the docs.
+- **Used as specifications or services, not copied code:** the Meterless Scout Intent spec and its official eval harness ([Meterless/Meterless](https://github.com/Meterless/Meterless), fetched at test time by `scripts/run_scout_evals.sh`), Zetaris (local Docker install), Meterless Nightshift and NVIDIA Nemotron models.
+- **Open-source libraries:** `requests`, `python-dotenv`, `openai`, `streamlit`. Scout uses only the Node.js standard library.
+- The idea is loosely inspired by the author's final-year project on customer-support message classification, but no code from it is used.
 
 ## How we built it
 

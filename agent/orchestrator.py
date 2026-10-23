@@ -5,23 +5,36 @@ from __future__ import annotations
 from agent.checks import run_checks
 from agent.critic import apply_hard_guards, run_critic
 from agent.decide import propose_decision
-from agent.evidence import gather_evidence
+from agent.evidence import _run_fallbacks, gather_evidence
 from agent.intake import run_intake
 from agent.reporter import write_report
 from agent.router import route_request
 from agent.runtime import MAX_MODEL_CALLS, ModelBudgetExceeded
 from agent.state import CaseFile
+from agent.tracing import write_log
 
 MAX_REVISIONS = 2
 
 
-def run_case(message: str, customer_id: str, demo_today: str | None = None) -> CaseFile:
+def run_case(
+    message: str,
+    customer_id: str,
+    demo_today: str | None = None,
+    request_id: str | None = None,
+) -> CaseFile:
+    """Run one case end to end and write its JSONL trace to logs/<trace_id>.jsonl."""
+    case = _run_case(message, customer_id, demo_today, request_id)
+    case.log_path = write_log(case)
+    return case
+
+
+def _run_case(message: str, customer_id: str, demo_today: str | None, request_id: str | None) -> CaseFile:
     """Run Scout Intent, then intake → evidence → checks → decide → critic → reporter.
 
     On critic revise, gather more evidence (at most two extra passes).
     If the 12 model-call cap is hit, stop and return human_review.
     """
-    case = CaseFile(message=message, customer_id=customer_id)
+    case = CaseFile(message=message, customer_id=customer_id, request_id=request_id)
     if demo_today:
         case.demo_today = demo_today
     # Scout Intent runs first: it may refuse, clarify, or answer without the agent team.
@@ -105,6 +118,15 @@ def run_case(message: str, customer_id: str, demo_today: str | None = None) -> C
             action="model_error",
             detail=str(exc)[:300],
         )
+        if not case.checks and case.order_id:
+            # The model failed before the facts were in. Collect them with the fixed,
+            # customer-scoped queries so the policy guards can still decide safely.
+            try:
+                _run_fallbacks(case, reason="model_unavailable")
+                run_checks(case)
+            except Exception as fallback_exc:  # noqa: BLE001 - never crash the case
+                case.add_trace(step="orchestrator", agent="orchestrator", action="model_error",
+                               detail=f"fallback evidence failed: {fallback_exc}"[:300])
         guard = apply_hard_guards(case) if case.checks else None
         accepted = (case.critique or {}).get("verdict") == "accept" and case.decision in {"approve", "reject", "human_review"}
         if accepted and not guard:
@@ -124,7 +146,7 @@ def run_case(message: str, customer_id: str, demo_today: str | None = None) -> C
             case.confidence = 0.95
             case.rules_applied = list(dict.fromkeys(list(case.rules_applied or []) + [guard["rule"]]))
             case.limitations = list(case.limitations) + [
-                "The AI model did not answer in time; the decision comes from the "
+                "The AI model was not available or did not answer in time; the decision comes from the "
                 f"deterministic policy guard {guard['rule']}: {guard['reason']}"
             ]
             case.add_trace(
@@ -137,7 +159,7 @@ def run_case(message: str, customer_id: str, demo_today: str | None = None) -> C
             case.decision = "human_review"
             case.confidence = 0.0
             case.limitations = list(case.limitations) + [
-                "The AI model did not answer in time, so the automated review stopped early."
+                "The AI model was not available or did not answer in time, so the automated review stopped early."
             ]
         if not case.customer_reply:
             case.customer_reply = _fallback_reply(case.decision)

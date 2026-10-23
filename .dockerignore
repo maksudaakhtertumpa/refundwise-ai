@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.venv/
+.git/
+__pycache__/
+logs/*.jsonl
+scout/telemetry/
+node_modules/
+*.pem
+*.key

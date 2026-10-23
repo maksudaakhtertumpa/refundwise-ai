@@ -170,7 +170,7 @@
   "rules_applied": [
     "R9"
   ],
-  "customer_reply": "Hello, thank you for contacting us about your air fryer from order ORD-1048. We reviewed your order and our records show that a refund of $139.00 was already approved for this order on September 28, 2026. Since an order can only be refunded once, we are unable to process another refund for this purchase. Please reach out if you have any other questions.",
+  "customer_reply": "We're sorry to hear your air fryer stopped working. Our records show that a refund was already processed for order ORD-1048 on September 28, 2026, and our policy allows only one refund per order. If you have any other questions, please let us know.",
   "limitations": [
     "No limitations; all relevant order and refund records were verified."
   ],
@@ -180,112 +180,128 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"refund.request\", \"score\": 1, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5KG5THMN547RZGYRHFFBCSY\", \"latencyMs\": 5.655}"
+      "detail": "{\"intent\": \"refund.request\", \"score\": 1, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5KX8DQX1YXJ1EQHN6QQYRH9\", \"latencyMs\": 3.8157}",
+      "timestamp": "2026-10-23T08:15:23.393Z"
     },
     {
       "step": "scout",
       "agent": "executor",
       "model": null,
       "action": "contract.verified",
-      "detail": "agent.review: ok"
+      "detail": "agent.review: ok",
+      "timestamp": "2026-10-23T08:15:23.393Z"
     },
     {
       "step": "intake",
       "agent": "intake",
       "model": null,
       "action": "skipped",
-      "detail": "Scout contract already bound order_id=ORD-1048 reason_type=defective"
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-      "action": "tool_round",
-      "detail": "Collect order, history, policy"
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": null,
-      "action": "run_sql",
-      "detail": "E1 ok=True source=shop_orders.orders"
+      "detail": "Scout contract already bound order_id=ORD-1048 reason_type=defective",
+      "timestamp": "2026-10-23T08:15:23.393Z"
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "tool_round",
-      "detail": "Collect order, history, policy"
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-23T08:15:39.257Z"
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": null,
       "action": "run_sql",
-      "detail": "E2 ok=True source=support_desk.refund_history"
+      "detail": "E1 ok=True source=shop_orders.orders",
+      "timestamp": "2026-10-23T08:15:39.628Z"
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
-      "detail": "Collect order, history, policy"
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-23T08:15:40.835Z"
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": null,
       "action": "run_sql",
-      "detail": "E3 ok=True source=policy_kb.refund_policy"
+      "detail": "E2 ok=True source=support_desk.refund_history",
+      "timestamp": "2026-10-23T08:15:41.058Z"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-23T08:15:42.389Z"
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E3 ok=True source=policy_kb.refund_policy",
+      "timestamp": "2026-10-23T08:15:42.624Z"
     },
     {
       "step": "checks",
       "agent": "checks",
       "model": null,
       "action": "compute",
-      "detail": "{'days_since_delivery': 31, 'days_since_order': 35, 'delivered': False, 'order_total': 139.0, 'already_refunded': True, 'approved_refunds_last_90_days': 1, 'final_sale': False, 'category': 'Home', 'over_auto_limit': False, 'order_status': 'refunded', 'delivery_date': '2026-09-24', 'order_date': '2026-09-20', 'order_found': True, 'order_belongs_to_customer': True}"
+      "detail": "{'days_since_delivery': 31, 'days_since_order': 35, 'delivered': False, 'order_total': 139.0, 'already_refunded': True, 'approved_refunds_last_90_days': 1, 'final_sale': False, 'category': 'Home', 'over_auto_limit': False, 'order_status': 'refunded', 'delivery_date': '2026-09-24', 'order_date': '2026-09-20', 'order_found': True, 'order_belongs_to_customer': True}",
+      "timestamp": "2026-10-23T08:15:42.624Z"
     },
     {
       "step": "decide",
       "agent": "decide",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "propose",
-      "detail": "Propose decision from checks and policy"
+      "detail": "Propose decision from checks and policy",
+      "timestamp": "2026-10-23T08:19:14.976Z"
     },
     {
       "step": "critic",
       "agent": "critic",
       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "review",
-      "detail": "Check proposal against evidence and checks"
+      "detail": "Check proposal against evidence and checks",
+      "timestamp": "2026-10-23T08:20:00.020Z"
     },
     {
       "step": "critic",
       "agent": "critic",
       "model": null,
       "action": "verdict",
-      "detail": "{\"verdict\": \"accept\", \"reason\": \"Order already refunded (status or refund_history).\", \"decision\": \"reject\"}"
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"Order already refunded (status or refund_history).\", \"decision\": \"reject\"}",
+      "timestamp": "2026-10-23T08:20:00.020Z"
     },
     {
       "step": "reporter",
       "agent": "reporter",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "write",
-      "detail": "Write customer reply and explanation"
+      "detail": "Write customer reply and explanation",
+      "timestamp": "2026-10-23T08:20:45.060Z"
     },
     {
       "step": "reporter",
       "agent": "reporter",
       "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Checked order record\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1048 belongs to customer C002, is for an Air Fryer, totals $139.00, and has a status of 'refunded'.\"}, {\"step\": \"Reviewed refund history\", \"evidence_id\": \"E2\", \"detail\": \"Refund RF-2004 was approved for ORD-1048 on 2026-09-28 for $139.00 with reason 'defective'.\"}, {\"step\": \"Applied refund policy\", \"evidence_id\": \"E3\", \"detail\": \"Policy permits only one refund per order; requests for already-refunded orders are rejected.\"}]}"
+      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified order details\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1048 for customer C002, Air Fryer, $139.00, status 'refunded'.\"}, {\"step\": \"Checked refund history\", \"evidence_id\": \"E2\", \"detail\": \"Refund RF-2004 was approved for ORD-1048 on 2026-09-28 for $139.00 with reason 'defective'.\"}, {\"step\": \"Applied refund policy\", \"evidence_id\": \"E3\", \"detail\": \"Policy permits only one refund per order; requests for already-refunded orders are rejected.\"}]}",
+      "timestamp": "2026-10-23T08:20:45.060Z"
     },
     {
       "step": "orchestrator",
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=reject confidence=1.0 model_calls=6/12"
+      "detail": "decision=reject confidence=1.0 model_calls=6/12",
+      "timestamp": "2026-10-23T08:20:45.060Z"
     }
   ],
   "model_calls": 6,
@@ -312,18 +328,18 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5KG5THMN547RZGYRHFFBCSY",
+    "contractId": "01M5KX8DQX1YXJ1EQHN6QQYRH9",
     "clarification": null,
-    "latencyMs": 5.655
+    "latencyMs": 3.8157
   },
   "explanation": [
     {
-      "step": "Checked order record",
+      "step": "Verified order details",
       "evidence_id": "E1",
-      "detail": "Order ORD-1048 belongs to customer C002, is for an Air Fryer, totals $139.00, and has a status of 'refunded'."
+      "detail": "Order ORD-1048 for customer C002, Air Fryer, $139.00, status 'refunded'."
     },
     {
-      "step": "Reviewed refund history",
+      "step": "Checked refund history",
       "evidence_id": "E2",
       "detail": "Refund RF-2004 was approved for ORD-1048 on 2026-09-28 for $139.00 with reason 'defective'."
     },
@@ -332,5 +348,8 @@
       "evidence_id": "E3",
       "detail": "Policy permits only one refund per order; requests for already-refunded orders are rejected."
     }
-  ]
+  ],
+  "trace_id": "trace-20261023-081523-a8e72a",
+  "request_id": "S6",
+  "log_path": "logs/trace-20261023-081523-a8e72a.jsonl"
 }

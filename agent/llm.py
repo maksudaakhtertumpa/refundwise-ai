@@ -7,6 +7,7 @@ or returned.
 from __future__ import annotations
 
 import os
+import time
 from pathlib import Path
 from typing import Any
 
@@ -32,8 +33,12 @@ def chat(
     lane: str = "fast",
     tools: list | None = None,
     temperature: float = 0.2,
+    timeout: float | None = None,
 ) -> dict:
     """Send a chat completion.
+
+    ``timeout`` caps the total wait in seconds (the caller's remaining case
+    budget); without it the lane's own timeout and retries apply.
 
     Returns the assistant message, the model that answered, and a note when
     Nightshift rejected the requested model id and a fallback was used.
@@ -42,10 +47,14 @@ def chat(
     fallback = os.getenv("METERLESS_MODEL") or _FALLBACK_DEFAULT
     # The deep lane (a 120B model on a free hosted endpoint) can take minutes,
     # so it gets a longer timeout and fewer retries than the fast lane.
-    client = _get_client().with_options(
-        timeout=_timeout_for_lane(lane),
-        max_retries=1 if lane.strip().lower() == "deep" else 2,
-    )
+    started = time.monotonic()
+    lane_timeout = _timeout_for_lane(lane)
+    retries = 1 if lane.strip().lower() == "deep" else 2
+    if timeout is not None:
+        # Never let retries outlive the case budget.
+        retries = 1 if timeout >= 2 * lane_timeout else 0
+        lane_timeout = max(5.0, min(lane_timeout, timeout))
+    client = _get_client().with_options(timeout=lane_timeout, max_retries=retries)
 
     try:
         completion, used_model, note = _complete(
@@ -62,9 +71,14 @@ def chat(
         # lane so the case can finish, and record that it happened.
         if not _is_aborted(exc):
             raise
+        retry_timeout = _timeout_for_lane("fast")
+        if timeout is not None:
+            retry_timeout = min(retry_timeout, timeout - (time.monotonic() - started))
+            if retry_timeout < 10:
+                raise RuntimeError(f"{exc} (no time left in the case budget to retry)") from exc
         retry_model = _model_for_lane("fast")
         completion, used_model, note = _complete(
-            _get_client().with_options(timeout=_timeout_for_lane("fast"), max_retries=1),
+            _get_client().with_options(timeout=retry_timeout, max_retries=0 if timeout is not None else 1),
             messages=messages,
             model=retry_model,
             tools=tools,
@@ -118,8 +132,8 @@ def _is_aborted(exc: BaseException) -> bool:
 def _timeout_for_lane(lane: str) -> float:
     """Seconds to wait for one completion on this lane (override in .env)."""
     if lane.strip().lower() == "deep":
-        return float(os.getenv("NEMOTRON_DEEP_TIMEOUT") or 240)
-    return float(os.getenv("NEMOTRON_FAST_TIMEOUT") or 150)
+        return float(os.getenv("NEMOTRON_DEEP_TIMEOUT") or 180)
+    return float(os.getenv("NEMOTRON_FAST_TIMEOUT") or 90)
 
 
 def _model_for_lane(lane: str) -> str:
