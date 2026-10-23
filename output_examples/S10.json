@@ -36,7 +36,7 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"order.status\", \"score\": 0.9088, \"band\": \"high\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5J4YDXYR180BJF8NXD98QXX\", \"latencyMs\": 2.9497}"
+      "detail": "{\"intent\": \"order.status\", \"score\": 0.9088, \"band\": \"high\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5KGNY5ANZGBHJKEQDJ5KNFT\", \"latencyMs\": 4.042}"
     },
     {
       "step": "scout",
@@ -72,8 +72,9 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5J4YDXYR180BJF8NXD98QXX",
+    "contractId": "01M5KGNY5ANZGBHJKEQDJ5KNFT",
     "clarification": null,
-    "latencyMs": 2.9497
-  }
+    "latencyMs": 4.042
+  },
+  "explanation": []
 }

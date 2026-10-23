@@ -44,6 +44,9 @@ def run_sql(sql: str, limit: int = 100) -> dict:
         result["error"] = safe_error
         return result
 
+    if (os.getenv("SAMPLE_MODE") or "").strip().lower() in {"1", "true", "yes"}:
+        return _run_sample(sql, limit, result)
+
     rest_url = (os.getenv("ZETARIS_REST_URL") or "").rstrip("/")
     org_id = os.getenv("ZETARIS_ORG_ID") or ""
     api_key = os.getenv("ZETARIS_API_KEY") or ""
@@ -97,6 +100,22 @@ def run_sql(sql: str, limit: int = 100) -> dict:
     return result
 
 
+_WRITE_WORDS = re.compile(
+    r"\b(insert|update|delete|drop|create|alter|truncate|grant|revoke|merge|register|cache|uncache|refresh|set)\b",
+    re.IGNORECASE,
+)
+_TABLE_REF = re.compile(r"\b(?:from|join)\s+([a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*)", re.IGNORECASE)
+# The only Zetaris tables RefundWise may read.
+ALLOWED_TABLES = frozenset(
+    {"shop_orders.orders", "support_desk.customers", "support_desk.refund_history", "policy_kb.refund_policy"}
+)
+
+
+def _strip_literals(sql: str) -> str:
+    """Remove quoted string literals so keywords inside values are not flagged."""
+    return re.sub(r"'(?:[^']|'')*'", "''", sql)
+
+
 def _safety_error(sql: str) -> str | None:
     stripped = sql.strip()
     if not stripped:
@@ -107,6 +126,15 @@ def _safety_error(sql: str) -> str | None:
             f"Only read-only statements are allowed "
             f"(SELECT, WITH, SHOW, DESCRIBE); refused {first!r}"
         )
+    bare = _strip_literals(stripped)
+    if ";" in bare.rstrip().rstrip(";"):
+        return "Only one SQL statement per call is allowed"
+    if _WRITE_WORDS.search(bare):
+        return "Write or admin keywords are not allowed in read-only queries"
+    if first in {"SELECT", "WITH"}:
+        for table in _TABLE_REF.findall(bare):
+            if table.lower() not in ALLOWED_TABLES:
+                return f"Table {table} is not on the RefundWise allow-list"
     return None
 
 
@@ -266,3 +294,51 @@ def _public_error(exc: BaseException) -> str:
     if api_key and api_key in text:
         text = text.replace(api_key, "***")
     return text
+
+
+# ---------------------------------------------------------------------------
+# SAMPLE_MODE: run the same read-only SQL against the CSV snapshot in data/sample
+# (SQLite, one attached database per Zetaris source) when Zetaris is not running.
+# ---------------------------------------------------------------------------
+_SAMPLE_DB = None
+
+
+def _sample_db():
+    global _SAMPLE_DB
+    if _SAMPLE_DB is not None:
+        return _SAMPLE_DB
+    import csv
+    import sqlite3
+
+    con = sqlite3.connect(":memory:")
+    for path in sorted((_ROOT / "data" / "sample").glob("*__*.csv")):
+        source, table = path.stem.split("__", 1)
+        if source not in {r[1] for r in con.execute("PRAGMA database_list")}:
+            con.execute(f"ATTACH DATABASE ':memory:' AS {source}")
+        with path.open(newline="") as fh:
+            reader = csv.reader(fh)
+            header = next(reader)
+            cols = ", ".join(f'"{c}" TEXT' for c in header)
+            con.execute(f"CREATE TABLE {source}.{table} ({cols})")
+            marks = ", ".join("?" for _ in header)
+            con.executemany(
+                f"INSERT INTO {source}.{table} VALUES ({marks})",
+                ([v if v != "" else None for v in row] for row in reader),
+            )
+    _SAMPLE_DB = con
+    return con
+
+
+def _run_sample(sql: str, limit: int, result: dict) -> dict:
+    """Execute against the CSV snapshot; same return shape as the Zetaris path."""
+    import sqlite3
+
+    try:
+        cur = _sample_db().execute(sql)
+        columns = [d[0] for d in cur.description or []]
+        rows = [dict(zip(columns, r)) for r in cur.fetchmany(limit)]
+    except sqlite3.Error as exc:
+        result["error"] = f"SAMPLE_MODE query failed: {exc}"
+        return result
+    result.update({"ok": True, "columns": columns, "rows": _round_decimals(rows), "mode": "sample"})
+    return result

@@ -81,6 +81,18 @@ def run_critic(case: CaseFile) -> dict:
 def apply_hard_guards(case: CaseFile) -> dict | None:
     """Force reject/human_review for policy tripwires the model must not override."""
     checks = case.checks or {}
+    if checks.get("order_found") is False:
+        return {
+            "decision": "human_review",
+            "rule": "R10",
+            "reason": "Order was not found on this customer's account.",
+        }
+    if checks.get("order_belongs_to_customer") is False:
+        return {
+            "decision": "human_review",
+            "rule": "R10",
+            "reason": "Order belongs to a different customer.",
+        }
     if checks.get("already_refunded"):
         return {
             "decision": "reject",

@@ -13,7 +13,7 @@ A real e-commerce company keeps this information in different tools. To mirror t
 | `support_desk` | `refund_history` | 9 | Past refund requests and decisions |
 | `policy_kb` | `refund_policy` | 10 | Refund policy rules (R1 to R10) |
 
-The same data is also in `sample/` as CSV files, for reading and for `SAMPLE_MODE=true`.
+The same data is also in `sample/` as CSV files. With `SAMPLE_MODE=true` in `.env`, `agent/tools_zetaris.py` runs the same read-only SQL against this CSV snapshot (SQLite) instead of Zetaris, so the data layer works without Docker. Model calls still go through Meterless Nightshift.
 
 ## Demo date
 
@@ -21,7 +21,7 @@ Scenarios are written relative to **2026-10-25** (`demo_today` in `input_example
 
 ## Demo scenarios
 
-`input_examples/requests.json` holds 8 customer messages with the expected outcome and the reason: 2 approve, 3 reject and 3 human review (high value, frequent refunder, conflicting records).
+`input_examples/requests.json` holds 12 customer messages with the expected outcome and the reason. S1–S8 go to the multi-agent refund review: 2 approve, 3 reject and 3 human review (high value, frequent refunder, conflicting records). S9–S12 show Scout Intent routing: a blocked prompt injection, an order-status lookup, a policy question and a clarification request.
 
 ## How to load it
 

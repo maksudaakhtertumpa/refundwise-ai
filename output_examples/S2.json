@@ -65,7 +65,9 @@
     "over_auto_limit": false,
     "order_status": "delivered",
     "delivery_date": "2026-08-20",
-    "order_date": "2026-08-16"
+    "order_date": "2026-08-16",
+    "order_found": true,
+    "order_belongs_to_customer": true
   },
   "proposed_decision": {
     "decision": "reject",
@@ -73,7 +75,7 @@
       "R2"
     ],
     "confidence": 1.0,
-    "rationale": "Order ORD-1017 (E1) was delivered on 2026-08-20. Per R2 (E3), Electronics change-of-mind returns are only accepted within 15 days of delivery. Today is 2026-10-25, which is 66 days since delivery, far exceeding the 15-day window. No other rules (R7, R8, R9, R10) are triggered given the order_total of $149.00, 0 prior refunds, and changed_mind reason type.",
+    "rationale": "Per R2, Electronics change-of-mind returns are accepted only within 15 days of delivery. E1 shows ORD-1017 (Wireless Headphones, Electronics) was delivered on 2026-08-20, and today is 2026-10-25, which is 66 days since delivery, far beyond the 15-day window. E3 confirms R2's 15-day window for Electronics change-of-mind returns.",
     "evidence_ids": [
       "E1",
       "E3"
@@ -82,7 +84,7 @@
   "critique": {
     "verdict": "accept",
     "missing_evidence": "",
-    "reason": "Order ORD-1017 (E1) delivered 2026-08-20; 66 days since delivery far exceeds the 15-day change-of-mind window for Electronics per policy R2 (E3). Python checks (days_since_delivery: 66, delivered: true, category: Electronics, over_auto_limit: false, already_refunded: false) confirm no conflicts. No prior refunds (E2 empty), order under auto-approve limit ($149 < $200). Rejection is fully supported.",
+    "reason": "All factual claims in the proposal are directly supported by evidence E1 (order delivered 2026-08-20, category Electronics, total $149) and E3 (R2: 15-day window for Electronics change-of-mind returns). Python checks confirm days_since_delivery=66, which exceeds the 15-day window, and agree with the reject decision. No conflicts or missing data.",
     "issues": []
   },
   "decision": "reject",
@@ -90,9 +92,9 @@
   "rules_applied": [
     "R2"
   ],
-  "customer_reply": "We're sorry you're not completely satisfied with your Wireless Headphones. Per our policy, change-of-mind returns for Electronics must be requested within 15 days of delivery, and your order was delivered on August 20, which falls outside that window. We appreciate your understanding.",
+  "customer_reply": "Thank you for writing in. We are unable to refund this order under the current refund policy.",
   "limitations": [
-    "Return decision based solely on the 15-day change-of-mind window for Electronics; no defect or other policy triggers apply."
+    "Automated reply; reporter model did not return JSON."
   ],
   "trace": [
     {
@@ -100,7 +102,7 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"refund.request\", \"score\": 0.924, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5J3F68PXW54A5E2DJ02VWKZ\", \"latencyMs\": 7.5513}"
+      "detail": "{\"intent\": \"refund.request\", \"score\": 0.924, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5KFCSK248ZGW4T0W1ZCB90E\", \"latencyMs\": 4.8305}"
     },
     {
       "step": "scout",
@@ -163,12 +165,12 @@
       "agent": "checks",
       "model": null,
       "action": "compute",
-      "detail": "{'days_since_delivery': 66, 'days_since_order': 70, 'delivered': True, 'order_total': 149.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-08-20', 'order_date': '2026-08-16'}"
+      "detail": "{'days_since_delivery': 66, 'days_since_order': 70, 'delivered': True, 'order_total': 149.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-08-20', 'order_date': '2026-08-16', 'order_found': True, 'order_belongs_to_customer': True}"
     },
     {
       "step": "decide",
       "agent": "decide",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "propose",
       "detail": "Propose decision from checks and policy"
     },
@@ -177,14 +179,14 @@
       "agent": "critic",
       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "review",
-      "detail": "Check proposal against evidence and checks (Request on 'nvidia/nemotron-3.5-super-vl-120b-a12b' was aborted; retried on 'nvidia/nemotron-3.5-lightning-30b-a3b'.)"
+      "detail": "Check proposal against evidence and checks"
     },
     {
       "step": "critic",
       "agent": "critic",
       "model": null,
       "action": "verdict",
-      "detail": "{\"verdict\": \"accept\", \"reason\": \"Order ORD-1017 (E1) delivered 2026-08-20; 66 days since delivery far exceeds the 15-day change-of-mind window for Electronics per policy R2 (E3). Python checks (days_since_delivery: 66, delivered: true, category: Electronics, over_auto_limit: false, already_refunded: false) confirm no conflicts. No prior refunds (E2 empty), order under auto-approve limit ($149 < $200). Rejection is fully supported.\", \"decision\": \"reject\"}"
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"All factual claims in the proposal are directly supported by evidence E1 (order delivered 2026-08-20, category Electronics, total $149) and E3 (R2: 15-day window for Electronics change-of-mind returns). Python checks confirm days_since_delivery=66, which exceeds the 15-day window, and agree with the reject decision. No conflicts or missing data.\", \"decision\": \"reject\"}"
     },
     {
       "step": "reporter",
@@ -197,8 +199,15 @@
       "step": "reporter",
       "agent": "reporter",
       "model": null,
+      "action": "fallback_text",
+      "detail": "Used template reply after invalid JSON"
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified delivery date and return window\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1017 delivered on 2026-08-20; 66 days have passed, exceeding the 15-day change-of-mind window for Electronics.\"}, {\"step\": \"Confirmed order total and auto-approve limit\", \"evidence_id\": \"E1\", \"detail\": \"Order total is $149.00, below the $200.00 auto-approve threshold, but the time window restriction takes precedence.\"}, {\"step\": \"Verified item is not final sale\", \"evidence_id\": \"E1\", \"detail\": \"The item is not marked final_sale, but this does not override the 15-day return window for change-of-mind requests.\"}, {\"step\": \"Checked refund history for recent requests\", \"evidence_id\": \"E2\", \"detail\": \"No approved refunds in the last 90 days for customer C007, so no abuse or pattern flags apply.\"}, {\"step\": \"Applied Electronics change-of-mind policy R2\", \"evidence_id\": \"E3\", \"detail\": \"Policy R2 (E3) allows Electronics change-of-mind returns only within 15 days of delivery; the order is 66 days post-delivery, so the request is outside the eligible window.\"}]}"
+      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"shop_orders.orders\", \"evidence_id\": \"E1\", \"detail\": \"shop_orders.orders\"}, {\"step\": \"support_desk.refund_history\", \"evidence_id\": \"E2\", \"detail\": \"support_desk.refund_history\"}, {\"step\": \"policy_kb.refund_policy\", \"evidence_id\": \"E3\", \"detail\": \"policy_kb.refund_policy\"}]}"
     },
     {
       "step": "orchestrator",
@@ -232,8 +241,25 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5J3F68PXW54A5E2DJ02VWKZ",
+    "contractId": "01M5KFCSK248ZGW4T0W1ZCB90E",
     "clarification": null,
-    "latencyMs": 7.5513
-  }
+    "latencyMs": 4.8305
+  },
+  "explanation": [
+    {
+      "step": "shop_orders.orders",
+      "evidence_id": "E1",
+      "detail": "shop_orders.orders"
+    },
+    {
+      "step": "support_desk.refund_history",
+      "evidence_id": "E2",
+      "detail": "support_desk.refund_history"
+    },
+    {
+      "step": "policy_kb.refund_policy",
+      "evidence_id": "E3",
+      "detail": "policy_kb.refund_policy"
+    }
+  ]
 }

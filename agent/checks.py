@@ -23,6 +23,9 @@ def run_checks(case: CaseFile) -> None:
     category = _get(order, "category")
     final_sale = _as_bool(_get(order, "final_sale"))
     this_order_id = case.order_id or _get(order, "order_id")
+    order_customer = _get(order, "customer_id")
+    order_found = bool(order)
+    belongs = (str(order_customer) == case.customer_id) if order_customer else None
 
     delivered = status == "delivered"
     already_refunded = _already_refunded(status, history, this_order_id)
@@ -41,6 +44,8 @@ def run_checks(case: CaseFile) -> None:
         "order_status": status or None,
         "delivery_date": delivery_date.isoformat() if delivery_date else None,
         "order_date": order_date.isoformat() if order_date else None,
+        "order_found": order_found,
+        "order_belongs_to_customer": belongs,
     }
     case.add_trace(
         step="checks",
@@ -83,10 +88,15 @@ def _find_order_row(case: CaseFile) -> dict[str, Any]:
         for row in _rows_as_dicts(item):
             if case.order_id and str(_get(row, "order_id") or "") != case.order_id:
                 continue
+            if row.get("customer_id") and str(row["customer_id"]) != case.customer_id:
+                continue
             if "order_total" in row or "product_name" in row or "status" in row:
                 return row
         if item.source == "shop_orders.orders":
-            rows = _rows_as_dicts(item)
+            rows = [
+                r for r in _rows_as_dicts(item)
+                if (not case.order_id or str(r.get("order_id") or "") == case.order_id)
+            ]
             if rows:
                 return rows[0]
     return {}
@@ -104,6 +114,9 @@ def _find_history_rows(case: CaseFile) -> list[dict[str, Any]]:
         )
         for row in _rows_as_dicts(item):
             if not looks_like_history and "refund_id" not in row:
+                continue
+            # Never count another customer's refunds (model SQL may over-fetch).
+            if row.get("customer_id") and str(row["customer_id"]) != case.customer_id:
                 continue
             if "refund_id" not in row and "request_date" not in row:
                 continue

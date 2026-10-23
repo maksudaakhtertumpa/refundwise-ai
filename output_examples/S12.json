@@ -22,7 +22,7 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"GENERAL\", \"score\": 0, \"band\": \"reject\", \"risk\": \"low\", \"flags\": [], \"contract\": null, \"latencyMs\": 2.7452}"
+      "detail": "{\"intent\": \"GENERAL\", \"score\": 0, \"band\": \"reject\", \"risk\": \"low\", \"flags\": [], \"contract\": null, \"latencyMs\": 3.0353}"
     },
     {
       "step": "orchestrator",
@@ -69,6 +69,7 @@
         }
       ]
     },
-    "latencyMs": 2.7452
-  }
+    "latencyMs": 3.0353
+  },
+  "explanation": []
 }

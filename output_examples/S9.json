@@ -22,7 +22,7 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"policy.question\", \"score\": 0.8976, \"band\": \"high\", \"risk\": \"block\", \"flags\": [\"injection\"], \"contract\": null, \"latencyMs\": 2.2638}"
+      "detail": "{\"intent\": \"policy.question\", \"score\": 0.8976, \"band\": \"high\", \"risk\": \"block\", \"flags\": [\"injection\"], \"contract\": null, \"latencyMs\": 1.9731}"
     },
     {
       "step": "orchestrator",
@@ -51,6 +51,7 @@
     "modelProfile": null,
     "contractId": null,
     "clarification": null,
-    "latencyMs": 2.2638
-  }
+    "latencyMs": 1.9731
+  },
+  "explanation": []
 }

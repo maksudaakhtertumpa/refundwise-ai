@@ -35,7 +35,10 @@ def write_report(case: CaseFile) -> None:
             detail="Used template reply after invalid JSON",
         )
     case.customer_reply = payload["customer_reply"]
-    case.limitations = payload["limitations"]
+    for item in payload.get("limitations") or []:
+        if item not in case.limitations:
+            case.limitations.append(item)
+    case.explanation = list(payload.get("explanation") or [])
     case.add_trace(
         step="reporter",
         agent="reporter",

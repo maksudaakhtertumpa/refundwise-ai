@@ -23,10 +23,18 @@ from agent.tools_zetaris import run_sql
 
 REFUND_INTENTS = {"refund.request", "order.not-received"}
 _ORDER_ID = re.compile(r"^ORD-\d{3,}$")
+_CUSTOMER_ID = re.compile(r"^C\d{3,}$")
 
 
 def route_request(case: CaseFile) -> str:
     """Run Scout, record the decision on the case, and return "refund" or "done"."""
+    if not _CUSTOMER_ID.match(case.customer_id or ""):
+        # The customer id comes from the signed-in session; anything else is refused
+        # before it can reach Scout, a model or a SQL query.
+        _finish(case, "refused", 1.0, "We couldn't verify your account. Please sign in again.",
+                limitation="Invalid customer id")
+        case.add_trace(step="scout", agent="router", action="invalid_customer", detail="customer id failed validation")
+        return "done"
     try:
         decision = scout_gate.decide(case.message, case.customer_id)
     except scout_gate.ScoutUnavailable as exc:

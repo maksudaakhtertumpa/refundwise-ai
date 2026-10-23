@@ -18,7 +18,6 @@ shop_orders.orders(
   order_id, customer_id, order_date, delivery_date, product_name, category,
   unit_price, quantity, order_total, payment_method, status, final_sale
 )
-support_desk.customers(customer_id, full_name, email, joined_date, loyalty_tier)
 support_desk.refund_history(
   refund_id, customer_id, order_id, request_date, amount, reason, decision
 )
@@ -31,7 +30,9 @@ You must collect:
 (b) this customer's full refund_history
 (c) refund_policy rows for the order's category AND category = 'ALL'
 
-Read-only SELECT/WITH only. Use literal quoted strings (no bind parameters).
+Read-only SELECT/WITH only, one statement per call. Use literal quoted strings (no bind parameters).
+Every query on shop_orders.orders or support_desk.refund_history MUST filter on this
+customer's customer_id; other queries are refused.
 Call run_sql for each query. After you have a, b and c, stop calling tools and reply DONE.
 """
 
@@ -94,12 +95,14 @@ def _tool_loop(case: CaseFile, extra_request: str | None) -> bool:
                 break
             tool_calls_used += 1
             sql, limit = _sql_from_call(call)
-            payload = run_sql(sql, limit=limit) if sql else {
-                "ok": False,
-                "sql": sql,
-                "rows": [],
-                "error": "Missing sql argument",
-            }
+            scope_error = scope_error_for(sql, case.customer_id) if sql else None
+            if scope_error:
+                payload = {"ok": False, "sql": sql, "rows": [], "error": scope_error}
+                case.add_trace(step="evidence", agent="evidence", action="refused_sql", detail=scope_error)
+            elif sql:
+                payload = run_sql(sql, limit=limit)
+            else:
+                payload = {"ok": False, "sql": sql, "rows": [], "error": "Missing sql argument"}
             if not payload.get("ok"):
                 sql_failed = True
             item = case.add_evidence(
@@ -209,6 +212,24 @@ def _fallback_queries(case: CaseFile, category: str | None) -> list[tuple[str, s
         )
     queries.append(("policy_kb.refund_policy", policy_sql, "policy rules"))
     return queries
+
+
+_CUSTOMER_SCOPED = ("shop_orders.orders", "support_desk.refund_history")
+
+
+def scope_error_for(sql: str, customer_id: str) -> str | None:
+    """Refuse model-written SQL that could read another customer's data.
+
+    Order and refund-history queries must contain this customer's id; the customers
+    table (names, emails) is not needed for a refund decision and is not exposed.
+    """
+    lower = (sql or "").lower()
+    if "support_desk.customers" in lower:
+        return "Query refused: the customers table is not needed for refund evidence"
+    if any(t in lower for t in _CUSTOMER_SCOPED):
+        if "customer_id" not in lower or f"'{customer_id.lower()}'" not in lower:
+            return f"Query refused: filter by customer_id = '{customer_id}'"
+    return None
 
 
 def _sql_literal(value: str) -> str:

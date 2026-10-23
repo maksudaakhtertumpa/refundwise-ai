@@ -9,7 +9,7 @@
     {
       "id": "E1",
       "source": "shop_orders.orders",
-      "sql": "SELECT * FROM shop_orders.orders WHERE order_id = 'ORD-1070' AND customer_id = 'C004'",
+      "sql": "SELECT * FROM shop_orders.orders WHERE customer_id = 'C004' AND order_id = 'ORD-1070'",
       "rows": [
         {
           "order_id": "ORD-1070",
@@ -38,8 +38,17 @@
     {
       "id": "E3",
       "source": "policy_kb.refund_policy",
-      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Electronics'",
+      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Electronics' OR category = 'ALL'",
       "rows": [
+        {
+          "rule_id": "R1",
+          "category": "ALL",
+          "reason_type": "changed_mind",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Unused items may be returned for a full refund within 30 days of delivery."
+        },
         {
           "rule_id": "R2",
           "category": "Electronics",
@@ -48,6 +57,69 @@
           "auto_approve_limit": "200.00",
           "outcome": "approve",
           "rule_text": "Electronics change-of-mind returns are accepted only within 15 days of delivery and must be unopened."
+        },
+        {
+          "rule_id": "R3",
+          "category": "ALL",
+          "reason_type": "defective",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Items that arrive damaged or defective are refunded in full within 30 days of delivery; a photo is requested."
+        },
+        {
+          "rule_id": "R4",
+          "category": "ALL",
+          "reason_type": "not_received",
+          "window_days": "14",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "If an order has not been delivered 14 days after the order date, the customer may choose a refund or a replacement."
+        },
+        {
+          "rule_id": "R5",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "Items marked final sale cannot be refunded unless they are defective."
+        },
+        {
+          "rule_id": "R7",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "200.00",
+          "outcome": "human_review",
+          "rule_text": "Any refund above 200.00 must be reviewed by a support lead before approval."
+        },
+        {
+          "rule_id": "R8",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "90",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse."
+        },
+        {
+          "rule_id": "R9",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "An order can be refunded only once. Requests for an order that was already refunded are rejected."
+        },
+        {
+          "rule_id": "R10",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "When the customer's claim conflicts with order or carrier records, the case goes to human review."
         }
       ],
       "note": "policy_kb.refund_policy"
@@ -65,28 +137,41 @@
     "over_auto_limit": false,
     "order_status": "delivered",
     "delivery_date": "2026-10-17",
-    "order_date": "2026-10-14"
+    "order_date": "2026-10-14",
+    "order_found": true,
+    "order_belongs_to_customer": true
   },
   "proposed_decision": {
     "decision": "human_review",
     "rules_applied": [
       "R10"
     ],
-    "confidence": 0.95,
-    "rationale": "Customer reports not_received, but E1 confirms order_status delivered and checks show delivered=true. This direct conflict triggers R10 human_review; days_since_order is 11, below the 14-day R4 window, so R4 does not apply.",
+    "confidence": 1.0,
+    "rationale": "Customer claims ORD-1070 was never received, but order records show status delivered with delivery_date 2026-10-17, only 11 days after the order date (E1). The customer's not_received claim conflicts with the delivered order record, triggering R10 human review. R4 does not apply because the item was delivered within 14 days of the order date.",
     "evidence_ids": [
-      "E1"
+      "E1",
+      "E2"
     ]
   },
-  "critique": null,
+  "critique": {
+    "verdict": "accept",
+    "missing_evidence": "",
+    "reason": "Customer claims not received but records show delivered.",
+    "issues": [],
+    "hard_guard": {
+      "decision": "human_review",
+      "rule": "R10",
+      "reason": "Customer claims not received but records show delivered."
+    }
+  },
   "decision": "human_review",
-  "confidence": 0.95,
+  "confidence": 1.0,
   "rules_applied": [
     "R10"
   ],
-  "customer_reply": "Thank you for writing in. A support lead will review this request and get back to you shortly.",
+  "customer_reply": "We've reviewed your concern about order ORD-1070. Our records indicate the Bluetooth Speaker was delivered on October 17, 2026, which differs from your report of non-receipt. We're escalating this case to our support team for a detailed review, and they will contact you soon.",
   "limitations": [
-    "The AI model did not answer in time; the decision comes from the deterministic policy guard R10: Customer claims not received but records show delivered."
+    "Could not independently verify carrier proof of delivery, signature, or whether the customer physically received the package despite the delivered status."
   ],
   "trace": [
     {
@@ -94,7 +179,7 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"order.not-received\", \"score\": 0.9347, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5J4SEKTZTM0E8GSVPR2RH4F\", \"latencyMs\": 4.5655}"
+      "detail": "{\"intent\": \"order.not-received\", \"score\": 0.9347, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5KGEBWAK1EBXT978DW2GRS6\", \"latencyMs\": 5.2317}"
     },
     {
       "step": "scout",
@@ -113,7 +198,7 @@
     {
       "step": "evidence",
       "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy"
     },
@@ -127,7 +212,7 @@
     {
       "step": "evidence",
       "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy"
     },
@@ -141,7 +226,7 @@
     {
       "step": "evidence",
       "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy"
     },
@@ -157,7 +242,7 @@
       "agent": "checks",
       "model": null,
       "action": "compute",
-      "detail": "{'days_since_delivery': 8, 'days_since_order': 11, 'delivered': True, 'order_total': 69.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-10-17', 'order_date': '2026-10-14'}"
+      "detail": "{'days_since_delivery': 8, 'days_since_order': 11, 'delivered': True, 'order_total': 69.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-10-17', 'order_date': '2026-10-14', 'order_found': True, 'order_belongs_to_customer': True}"
     },
     {
       "step": "decide",
@@ -167,28 +252,42 @@
       "detail": "Propose decision from checks and policy"
     },
     {
-      "step": "orchestrator",
-      "agent": "orchestrator",
-      "model": null,
-      "action": "model_error",
-      "detail": "Error code: 499 - {'error': {'message': 'The request was aborted before completion.', 'type': 'invalid_request_error', 'code': 'request_aborted', 'param': None, 'meterless_detail': 'Fetch is aborted'}, 'meterless': {'request_id': 'chatcmpl-1oain4mcmvjpwl0k', 'requested_model': 'nvidia/nemotron-3.5-l"
+      "step": "critic",
+      "agent": "critic",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "review",
+      "detail": "Check proposal against evidence and checks"
     },
     {
-      "step": "orchestrator",
-      "agent": "orchestrator",
+      "step": "critic",
+      "agent": "critic",
       "model": null,
-      "action": "guard_fallback",
-      "detail": "R10: Customer claims not received but records show delivered. -> human_review"
+      "action": "verdict",
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"Customer claims not received but records show delivered.\", \"decision\": \"human_review\"}"
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "write",
+      "detail": "Write customer reply and explanation"
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": null,
+      "action": "reply",
+      "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"Checked the order record for ORD-1070\", \"evidence_id\": \"E1\", \"detail\": \"Order for customer C004, Bluetooth Speaker (Electronics), ordered 2026-10-14, delivery date 2026-10-17, status delivered, order total $69.00, not final sale.\"}, {\"step\": \"Checked refund history for customer and order\", \"evidence_id\": \"E2\", \"detail\": \"No prior refunds found for this customer or order.\"}, {\"step\": \"Compared customer's not_received claim with order records\", \"evidence_id\": \"E1\", \"detail\": \"Customer states the item was not received, but the order record shows it was delivered on 2026-10-17, creating a direct conflict.\"}, {\"step\": \"Applied conflict resolution policy\", \"evidence_id\": \"E3\", \"detail\": \"Rule R10 from the policy knowledge base requires cases where the customer's claim conflicts with order or carrier records to be sent to human review.\"}]}"
     },
     {
       "step": "orchestrator",
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=human_review confidence=0.95 model_calls=4/12"
+      "detail": "decision=human_review confidence=1.0 model_calls=6/12"
     }
   ],
-  "model_calls": 4,
+  "model_calls": 6,
   "scout": {
     "intent": "order.not-received",
     "score": 0.9347,
@@ -212,8 +311,30 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5J4SEKTZTM0E8GSVPR2RH4F",
+    "contractId": "01M5KGEBWAK1EBXT978DW2GRS6",
     "clarification": null,
-    "latencyMs": 4.5655
-  }
+    "latencyMs": 5.2317
+  },
+  "explanation": [
+    {
+      "step": "Checked the order record for ORD-1070",
+      "evidence_id": "E1",
+      "detail": "Order for customer C004, Bluetooth Speaker (Electronics), ordered 2026-10-14, delivery date 2026-10-17, status delivered, order total $69.00, not final sale."
+    },
+    {
+      "step": "Checked refund history for customer and order",
+      "evidence_id": "E2",
+      "detail": "No prior refunds found for this customer or order."
+    },
+    {
+      "step": "Compared customer's not_received claim with order records",
+      "evidence_id": "E1",
+      "detail": "Customer states the item was not received, but the order record shows it was delivered on 2026-10-17, creating a direct conflict."
+    },
+    {
+      "step": "Applied conflict resolution policy",
+      "evidence_id": "E3",
+      "detail": "Rule R10 from the policy knowledge base requires cases where the customer's claim conflicts with order or carrier records to be sent to human review."
+    }
+  ]
 }

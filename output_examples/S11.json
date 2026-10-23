@@ -93,7 +93,7 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"policy.question\", \"score\": 0.5705, \"band\": \"medium\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5J4YE80V6DE7SDWSBHQ96NN\", \"latencyMs\": 3.6865}"
+      "detail": "{\"intent\": \"policy.question\", \"score\": 0.5705, \"band\": \"medium\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5KGNYVDGN038N15V1CRTG1B\", \"latencyMs\": 3.6906}"
     },
     {
       "step": "scout",
@@ -127,8 +127,9 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5J4YE80V6DE7SDWSBHQ96NN",
+    "contractId": "01M5KGNYVDGN038N15V1CRTG1B",
     "clarification": null,
-    "latencyMs": 3.6865
-  }
+    "latencyMs": 3.6906
+  },
+  "explanation": []
 }
