@@ -275,13 +275,12 @@ def render_case(case: dict[str, Any]) -> None:
         "needs_info": "Needs info",
     }
     decision = case.get("decision") or "unknown"
-    metrics = st.columns(5)
-    metrics[0].metric("Decision", decision_labels.get(decision, "Unknown"))
-    metrics[1].metric("Confidence", "Not scored" if confidence is None else f"{float(confidence):.0%}")
-    metrics[2].metric("Model calls", case.get("model_calls", 0))
-    metrics[3].metric("Evidence items", len(case.get("evidence") or []))
+    metrics = st.columns(4)
+    metrics[0].metric("Confidence", "Not scored" if confidence is None else f"{float(confidence):.0%}")
+    metrics[1].metric("Model calls", case.get("model_calls", 0))
+    metrics[2].metric("Evidence items", len(case.get("evidence") or []))
     latency = scout.get("latencyMs")
-    metrics[4].metric("Scout latency", "—" if latency is None else f"{float(latency):.1f} ms")
+    metrics[3].metric("Scout latency", "—" if latency is None else f"{float(latency):.1f} ms")
     render_decision(case)
     render_scout(scout)
     render_evidence(case.get("evidence") or [])
