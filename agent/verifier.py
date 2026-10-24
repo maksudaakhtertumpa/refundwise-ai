@@ -143,11 +143,12 @@ def review_report(case: CaseFile, payload: dict) -> list[str]:
         issues.append("Reply: it promises payment timing or completion; RefundWise only decides, payment is processed separately.")
     allowed = _allowed_money(case)
     texts = [reply] + [str(s.get("detail") or "") + " " + str(s.get("step") or "") for s in steps if isinstance(s, dict)]
-    for text in texts:
+    for index, text in enumerate(texts):
         for match in _MONEY_ANY.finditer(text):
             value = _num(match.group(1))
             if value is not None and round(value, 2) not in allowed:
-                issues.append(f"Mentions {match.group(0).strip()}, which is not an amount in the evidence.")
+                where = "Reply: mentions" if index == 0 else "Mentions"
+                issues.append(f"{where} {match.group(0).strip()}, which is not an amount in the evidence.")
     return list(dict.fromkeys(issues))
 
 

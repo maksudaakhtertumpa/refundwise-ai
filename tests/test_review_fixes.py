@@ -127,5 +127,77 @@ class FinalReviewer(unittest.TestCase):
         self.assertNotIn("business days", _fallback_reply("approve"))
 
 
+class IsolationUnderEveryTableName(unittest.TestCase):
+    """Review of ec0e385: source and data-mart names bypassed the scope check and row filter."""
+
+    NAMES = ("shop_orders.orders", "refundwise_mart.orders", '"shop_orders"."orders"', "shop_orders . orders",
+             "orders", f"{U}.orders", "support_desk.refund_history", "refundwise_mart.refund_history")
+
+    def test_every_name_needs_this_customers_filter(self):
+        for name in self.NAMES:
+            self.assertIsNotNone(scope_error_for(f"SELECT * FROM {name}", "C003"), name)
+            self.assertIsNotNone(scope_error_for(f"SELECT * FROM {name} WHERE customer_id <> 'C003'", "C003"), name)
+            self.assertIsNone(scope_error_for(f"SELECT * FROM {name} WHERE customer_id = 'C003'", "C003"), name)
+
+    def test_customers_table_is_refused_under_every_name(self):
+        for name in ("support_desk.customers", "refundwise_mart.customers", '"support_desk"."customers"', f"{U}.customers"):
+            self.assertIsNotNone(scope_error_for(f"SELECT * FROM {name} WHERE customer_id = 'C003'", "C003"), name)
+
+    def test_sample_mode_rows_are_filtered_whatever_the_name(self):
+        from agent.evidence import infer_source
+        from agent.tools_zetaris import run_sql
+        for sql in ("SELECT * FROM shop_orders.orders", "SELECT * FROM refundwise_mart.orders"):
+            payload = run_sql(sql)
+            self.assertTrue(payload["ok"], payload.get("error"))
+            self.assertGreater(len({r["customer_id"] for r in payload["rows"]}), 1, "the attack really reads other customers")
+            self.assertEqual(infer_source(sql), f"{U}.orders")
+            kept, _ = enforce_customer_rows(payload["rows"], infer_source(sql), "C003", sql)
+            self.assertTrue(kept and all(r["customer_id"] == "C003" for r in kept), sql)
+
+    def test_model_written_alias_queries_never_leak_rows(self):
+        attacks = ["SELECT * FROM shop_orders.orders", "SELECT * FROM refundwise_mart.orders",
+                   'SELECT * FROM "support_desk"."refund_history"',
+                   "SELECT order_id, order_total FROM shop_orders.orders WHERE customer_id = 'C003'"]
+        sent = {"done": False}
+
+        def chat(messages, lane="fast", tools=None, temperature=0.2, timeout=None):
+            if tools:
+                if sent["done"]:
+                    return {"message": {"role": "assistant", "content": "done"}, "model": "scripted", "note": None}
+                sent["done"] = True
+                calls = [{"id": f"t{i}", "type": "function",
+                          "function": {"name": "run_sql", "arguments": json.dumps({"sql": sql})}}
+                         for i, sql in enumerate(attacks)]
+                return {"message": {"role": "assistant", "content": "", "tool_calls": calls}, "model": "scripted", "note": None}
+            return {"message": {"role": "assistant", "content": "{}"}, "model": "scripted", "note": None}
+
+        with mock.patch.object(runtime, "chat", chat):
+            case = run_case("My hair dryer from ORD-1020 stopped heating. I want a refund.", "C003", demo_today="2026-10-25")
+        leaked = [r for item in case.evidence for r in item.rows
+                  if isinstance(r, dict) and "customer_id" in r and r["customer_id"] != "C003"]
+        self.assertEqual(leaked, [])
+        self.assertGreaterEqual(sum(1 for e in case.trace if e.action == "refused_sql"), 3)
+
+
+class RepairNeverKeepsAWrongAmount(unittest.TestCase):
+    """Review of ec0e385: a flagged $9999 in the reply survived _repair()."""
+
+    def test_reply_with_invented_amount_is_replaced_and_rechecked(self):
+        from agent import reporter
+        case = FinalReviewer()._case("approve")
+        bad = {"customer_reply": "Your refund of $9999 is approved for processing.",
+               "explanation": [{"step": "Order total", "evidence_id": "E1", "detail": "Order total $89.00"}]}
+
+        def chat(messages, lane="fast", tools=None, temperature=0.2, timeout=None):
+            return {"message": {"role": "assistant", "content": json.dumps(bad)}, "model": "scripted", "note": None}
+
+        with mock.patch.object(runtime, "chat", chat):
+            reporter.write_report(case)
+        self.assertNotIn("9999", case.customer_reply)
+        self.assertNotIn("9999", json.dumps(case.explanation))
+        self.assertEqual(review_report(case, {"customer_reply": case.customer_reply, "explanation": case.explanation}), [])
+        self.assertTrue(any("Reply: mentions $9999" in e.detail for e in case.trace if e.action == "review"))
+
+
 if __name__ == "__main__":
     unittest.main()

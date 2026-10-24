@@ -80,17 +80,28 @@ def write_report(case: CaseFile) -> None:
 
 
 def _repair(case: CaseFile, payload: dict, issues: list[str]) -> dict:
-    """Keep only steps that cite real evidence; use the template reply if it contradicts the decision."""
+    """Fix a reply the reviewer rejected twice, then check the result again.
+
+    Steps that cite no real evidence or carry an unsupported amount are dropped. Any reply
+    problem (wrong outcome, payment promise, unsupported amount) means the verified template
+    reply is used. If the repaired answer still fails review, the whole template is used.
+    """
     ids = {item.id for item in case.evidence}
-    bad = " ".join(i for i in issues if i.startswith("Mentions "))
+    bad = " ".join(i for i in issues if "entions " in i)
     steps = [s for s in payload.get("explanation") or [] if isinstance(s, dict) and s.get("evidence_id") in ids
-             and not any(tok in bad for tok in re.findall(r"\$\s?[\d.,]+", str(s.get("detail") or "")))]
+             and not any(tok in bad for tok in re.findall(r"(?:\$|RM|USD)\s?[\d.,]+",
+                                                         str(s.get("detail") or "") + " " + str(s.get("step") or "")))]
     reply = payload.get("customer_reply")
     if any(i.startswith("Reply:") for i in issues):
         reply = _fallback_report(case)["customer_reply"]
+    repaired = {**payload, "customer_reply": reply, "explanation": steps or _fallback_report(case)["explanation"]}
+    left = review_report(case, repaired)
+    if left:
+        repaired = {**_fallback_report(case), "limitations": list(payload.get("limitations") or [])}
     case.add_trace(step="reporter", agent="final-reviewer", action="repair",
-                   detail=f"kept {len(steps)} cited steps; template reply={reply != payload.get('customer_reply')}")
-    return {**payload, "customer_reply": reply, "explanation": steps or _fallback_report(case)["explanation"]}
+                   detail=f"kept {len(steps)} cited steps; template reply={repaired['customer_reply'] != payload.get('customer_reply')}; "
+                   + ("final check ok" if not left else "final check failed (" + "; ".join(left) + "), used full template"))
+    return repaired
 
 
 def _ask(case: CaseFile, feedback: list[str] | None = None) -> dict | None:

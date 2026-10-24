@@ -130,7 +130,7 @@ def _tool_loop(case: CaseFile, extra_request: str | None) -> bool:
             else:
                 payload = {"ok": False, "sql": sql, "rows": [], "error": "Missing sql argument"}
             if payload.get("ok"):
-                kept, removed = enforce_customer_rows(payload.get("rows") or [], infer_source(sql), case.customer_id)
+                kept, removed = enforce_customer_rows(payload.get("rows") or [], infer_source(sql), case.customer_id, sql)
                 if removed:
                     payload = {**payload, "rows": kept}
                     case.add_trace(step="evidence", agent="evidence", action="scope_filter",
@@ -252,33 +252,65 @@ def _fallback_queries(case: CaseFile, category: str | None) -> list[tuple[str, s
 _CUSTOMER_SCOPED = ("lightning.metastore.refundwise.refundwise_usl.orders", "lightning.metastore.refundwise.refundwise_usl.refund_history")
 
 
+_USL_PREFIX = "lightning.metastore.refundwise.refundwise_usl"
+# The same table can be named through the semantic layer, the data mart, its source system or bare
+# (refundwise_usl.orders, refundwise_mart.orders, shop_orders.orders, "shop_orders"."orders", orders).
+# Every check below works on the table word, so all of those names are treated the same.
+_TABLE_WORD = re.compile(r"\b(orders|refund_history|customers|refund_policy)\b")
+
+
+def _unquote(sql: str) -> str:
+    """Lower-case, drop identifier quotes and close up dotted names (string literals are kept)."""
+    text = re.sub(r'["`\[\]]', "", (sql or "").lower())
+    return re.sub(r"\s*\.\s*", ".", text)
+
+
+def tables_in(sql: str) -> set[str]:
+    """Canonical semantic-layer names of every RefundWise table a query mentions, under any name."""
+    return {f"{_USL_PREFIX}.{t}" for t in _TABLE_WORD.findall(_strip_literals(_unquote(sql)))}
+
+
 def scope_error_for(sql: str, customer_id: str) -> str | None:
     """Refuse model-written SQL that could read another customer's data.
 
-    Order and refund-history queries must contain this customer's id; the customers
-    table (names, emails) is not needed for a refund decision and is not exposed.
+    Order and refund-history queries, under any table name, must filter on this customer's id;
+    the customers table (names, emails) is not needed for a refund decision and is not exposed.
     """
-    lower = (sql or "").lower()
-    if "lightning.metastore.refundwise.refundwise_usl.customers" in lower or "support_desk.customers" in lower:
+    tables = tables_in(sql)
+    if f"{_USL_PREFIX}.customers" in tables:
         return "Query refused: the customers table is not needed for refund evidence"
-    if any(t in lower for t in _CUSTOMER_SCOPED):
-        if "customer_id" not in lower or f"'{customer_id.lower()}'" not in lower:
+    if tables & set(_CUSTOMER_SCOPED):
+        text = _unquote(sql)
+        if not re.search(rf"\bcustomer_id\s*=\s*'{re.escape(customer_id.lower())}'", text):
             return f"Query refused: filter by customer_id = '{customer_id}'"
-        bare = _strip_literals(lower)
+        bare = _strip_literals(text)
         if re.search(r"\b(or|union|intersect|except)\b", bare) or bare.count("select") > 1:
             return "Query refused: customer-scoped queries may not use OR, UNION or subqueries"
     return None
 
 
-def enforce_customer_rows(rows: list, source: str, customer_id: str) -> tuple[list, int]:
-    """Keep only this customer's rows from a customer-scoped table (the real isolation guarantee).
+def enforce_customer_rows(rows: list, source: str, customer_id: str, sql: str = "") -> tuple[list, int]:
+    """Keep only this customer's rows (the real isolation guarantee).
 
-    Returns (kept_rows, removed_count). Rows without a customer_id column are removed,
-    because their owner cannot be checked.
+    Any row with a customer_id column must belong to this customer. For order and refund-history
+    queries (detected from the source or the SQL, under any table name), rows without a
+    customer_id column are removed too, because their owner cannot be checked.
+    Returns (kept_rows, removed_count).
     """
-    if source not in _CUSTOMER_SCOPED:
-        return rows, 0
-    kept = [r for r in rows or [] if isinstance(r, dict) and str(r.get("customer_id") or "").upper() == customer_id.upper()]
+    scoped = source in _CUSTOMER_SCOPED or bool(tables_in(sql) & set(_CUSTOMER_SCOPED))
+    kept = []
+    for row in rows or []:
+        if not isinstance(row, dict):
+            if not scoped:
+                kept.append(row)
+            continue
+        owner = next((v for k, v in row.items() if str(k).lower() == "customer_id"), None)
+        has_owner = any(str(k).lower() == "customer_id" for k in row)
+        if has_owner:
+            if str(owner or "").upper() == customer_id.upper():
+                kept.append(row)
+        elif not scoped:
+            kept.append(row)
     return kept, len(rows or []) - len(kept)
 
 
@@ -288,15 +320,15 @@ def _sql_literal(value: str) -> str:
 
 
 def infer_source(sql: str) -> str:
-    """Guess which table a query reads."""
-    lower = (sql or "").lower()
+    """Canonical semantic-layer name of the table a query reads, whatever name it used."""
+    tables = tables_in(sql)
     for name in (
         "lightning.metastore.refundwise.refundwise_usl.orders",
         "lightning.metastore.refundwise.refundwise_usl.refund_history",
         "lightning.metastore.refundwise.refundwise_usl.customers",
         "lightning.metastore.refundwise.refundwise_usl.refund_policy",
     ):
-        if name in lower:
+        if name in tables:
             return name
     return "zetaris"
 
