@@ -9,7 +9,7 @@
     {
       "id": "E1",
       "source": "lightning.metastore.refundwise.refundwise_usl.orders",
-      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE customer_id = 'C002' AND order_id = 'ORD-1028'",
+      "sql": "SELECT order_id, customer_id, order_date, delivery_date, product_name, category, unit_price, quantity, order_total, payment_method, status, final_sale FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE customer_id = 'C002' AND order_id = 'ORD-1028'",
       "rows": [
         {
           "order_id": "ORD-1028",
@@ -31,7 +31,7 @@
     {
       "id": "E2",
       "source": "lightning.metastore.refundwise.refundwise_usl.refund_history",
-      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_history WHERE customer_id = 'C002'",
+      "sql": "SELECT refund_id, customer_id, order_id, request_date, amount, reason, decision FROM lightning.metastore.refundwise.refundwise_usl.refund_history WHERE customer_id = 'C002'",
       "rows": [
         {
           "refund_id": "RF-2004",
@@ -48,7 +48,7 @@
     {
       "id": "E3",
       "source": "lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy WHERE category = 'Clothing' OR category = 'ALL'",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy WHERE category IN ('Clothing', 'ALL')",
       "rows": [
         {
           "rule_id": "R1",
@@ -140,7 +140,8 @@
     "delivery_date": "2026-09-24",
     "order_date": "2026-09-19",
     "order_found": true,
-    "order_belongs_to_customer": true
+    "order_belongs_to_customer": true,
+    "customer_says_unopened": null
   },
   "proposed_decision": {
     "decision": "reject",
@@ -148,7 +149,7 @@
       "R1"
     ],
     "confidence": 1.0,
-    "rationale": "Reason is changed_mind. R1 approves unused items returned within 30 days of delivery, but checks show days_since_delivery is 31 (E1: delivered 2026-09-24, today 2026-10-25), so the 30-day window has expired. No other rule approves a changed-mind refund outside that window.",
+    "rationale": "R1 approves unused items returned within 30 days of delivery, but the checks report days_since_delivery as 31 (E1: delivered 2026-09-24, today 2026-10-25), so the 30-day changed-mind window has expired. No other rule approves a changed-mind refund outside that window.",
     "evidence_ids": [
       "E1"
     ]
@@ -156,7 +157,7 @@
   "critique": {
     "verdict": "accept",
     "missing_evidence": "",
-    "reason": "All factual claims in the proposal are corroborated by the evidence and Python checks. E1 confirms delivery on 2026-09-24 and the check reports days_since_delivery=31, which exceeds R1's 30-day changed_mind window (E3). E3 shows R1 is the only applicable changed_mind rule, and no other rule approves a refund outside that window. The decision to reject is correct and consistent with all data.",
+    "reason": "The reject decision is correct. R1 (E3) approves changed-mind returns only within 30 days of delivery, but the Python checks report days_since_delivery = 31 and E1 confirms delivery on 2026-09-24, so the window has expired. No other rule applies: not final sale, $34.50 is under the $200 limit, only 1 prior approved refund in 90 days, and the order was not already refunded. All factual claims agree with the Python checks, which take precedence.",
     "issues": []
   },
   "decision": "reject",
@@ -164,7 +165,7 @@
   "rules_applied": [
     "R1"
   ],
-  "customer_reply": "We\u2019re sorry, but we\u2019re unable to issue a refund for the cotton t-shirt pack from ORD-1028. The order was delivered on 2026-09-24, which is 31 days ago\u2014outside our 30-day changed-mind return window. Because the return window has expired, we cannot approve this request.",
+  "customer_reply": "Thank you for contacting us about ORD-1028. We\u2019re sorry, but we\u2019re unable to issue a refund for the cotton t-shirt pack because it was delivered on 2026-09-24, which is 31 days ago\u2014outside our 30-day changed-mind return window. Since the return window has expired, we cannot approve this request.",
   "limitations": [
     "Item condition (unused/defective) was not independently verified beyond the order status.",
     "Return window is based solely on the delivery date recorded in E1; actual receipt by the customer may vary."
@@ -175,8 +176,8 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"refund.request\", \"score\": 1, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PKQSN12KZSNTBY1PE3MT8M\", \"latencyMs\": 3.2528}",
-      "timestamp": "2026-10-24T09:26:44.644Z",
+      "detail": "{\"intent\": \"refund.request\", \"score\": 1, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PVHZ1XK1VB39NZ9856FRDC\", \"latencyMs\": 9.9103}",
+      "timestamp": "2026-10-24T11:43:22.183Z",
       "confidence": null
     },
     {
@@ -185,7 +186,7 @@
       "model": null,
       "action": "contract.verified",
       "detail": "agent.review: ok",
-      "timestamp": "2026-10-24T09:26:44.644Z",
+      "timestamp": "2026-10-24T11:43:22.183Z",
       "confidence": null
     },
     {
@@ -194,7 +195,7 @@
       "model": null,
       "action": "skipped",
       "detail": "Scout contract already bound order_id=ORD-1028 reason_type=changed_mind",
-      "timestamp": "2026-10-24T09:26:44.644Z",
+      "timestamp": "2026-10-24T11:43:22.183Z",
       "confidence": null
     },
     {
@@ -203,7 +204,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T09:26:46.471Z",
+      "timestamp": "2026-10-24T11:43:24.012Z",
       "confidence": null
     },
     {
@@ -212,16 +213,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E1 ok=True source=lightning.metastore.refundwise.refundwise_usl.orders",
-      "timestamp": "2026-10-24T09:26:46.956Z",
-      "confidence": null
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-      "action": "tool_round",
-      "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T09:26:48.162Z",
+      "timestamp": "2026-10-24T11:43:24.775Z",
       "confidence": null
     },
     {
@@ -230,7 +222,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E2 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_history",
-      "timestamp": "2026-10-24T09:26:48.434Z",
+      "timestamp": "2026-10-24T11:43:24.982Z",
       "confidence": null
     },
     {
@@ -239,7 +231,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T09:26:49.269Z",
+      "timestamp": "2026-10-24T11:43:27.311Z",
       "confidence": null
     },
     {
@@ -248,7 +240,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E3 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "timestamp": "2026-10-24T09:26:49.527Z",
+      "timestamp": "2026-10-24T11:43:27.505Z",
       "confidence": null
     },
     {
@@ -256,8 +248,8 @@
       "agent": "checks",
       "model": null,
       "action": "compute",
-      "detail": "{'days_since_delivery': 31, 'days_since_order': 36, 'delivered': True, 'order_total': 34.5, 'already_refunded': False, 'approved_refunds_last_90_days': 1, 'final_sale': False, 'category': 'Clothing', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-09-24', 'order_date': '2026-09-19', 'order_found': True, 'order_belongs_to_customer': True}",
-      "timestamp": "2026-10-24T09:26:49.527Z",
+      "detail": "{'days_since_delivery': 31, 'days_since_order': 36, 'delivered': True, 'order_total': 34.5, 'already_refunded': False, 'approved_refunds_last_90_days': 1, 'final_sale': False, 'category': 'Clothing', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-09-24', 'order_date': '2026-09-19', 'order_found': True, 'order_belongs_to_customer': True, 'customer_says_unopened': None}",
+      "timestamp": "2026-10-24T11:43:27.506Z",
       "confidence": null
     },
     {
@@ -266,7 +258,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "propose",
       "detail": "Propose decision from checks and policy",
-      "timestamp": "2026-10-24T09:27:39.017Z",
+      "timestamp": "2026-10-24T11:44:40.207Z",
       "confidence": null
     },
     {
@@ -275,16 +267,16 @@
       "model": null,
       "action": "proposal",
       "detail": "reject rules=['R1'] evidence=['E1']",
-      "timestamp": "2026-10-24T09:27:39.018Z",
+      "timestamp": "2026-10-24T11:44:40.207Z",
       "confidence": 1.0
     },
     {
       "step": "critic",
       "agent": "critic",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "review",
       "detail": "Check proposal against evidence and checks",
-      "timestamp": "2026-10-24T09:28:24.053Z",
+      "timestamp": "2026-10-24T11:45:29.470Z",
       "confidence": null
     },
     {
@@ -293,7 +285,7 @@
       "model": null,
       "action": "verify_claims",
       "detail": "All cited evidence, rules, numbers and windows match the checks.",
-      "timestamp": "2026-10-24T09:28:24.054Z",
+      "timestamp": "2026-10-24T11:45:29.471Z",
       "confidence": null
     },
     {
@@ -301,8 +293,8 @@
       "agent": "critic",
       "model": null,
       "action": "verdict",
-      "detail": "{\"verdict\": \"accept\", \"reason\": \"All factual claims in the proposal are corroborated by the evidence and Python checks. E1 confirms delivery on 2026-09-24 and the check reports days_since_delivery=31, which exceeds R1's 30-day changed_mind window (E3). E3 shows R1 is the only applicable changed_mind rule, and no other rule approves a refund outside that window. The decision to reject is correct and consistent with all data.\", \"decision\": \"reject\", \"revise_target\": null}",
-      "timestamp": "2026-10-24T09:28:24.054Z",
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"The reject decision is correct. R1 (E3) approves changed-mind returns only within 30 days of delivery, but the Python checks report days_since_delivery = 31 and E1 confirms delivery on 2026-09-24, so the window has expired. No other rule applies: not final sale, $34.50 is under the $200 limit, only 1 prior approved refund in 90 days, and the order was not already refunded. All factual claims agree with the Python checks, which take precedence.\", \"decision\": \"reject\", \"revise_target\": null}",
+      "timestamp": "2026-10-24T11:45:29.471Z",
       "confidence": 1.0
     },
     {
@@ -311,7 +303,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "write",
       "detail": "Write customer reply and explanation",
-      "timestamp": "2026-10-24T09:30:44.362Z",
+      "timestamp": "2026-10-24T11:46:29.308Z",
       "confidence": null
     },
     {
@@ -320,7 +312,7 @@
       "model": null,
       "action": "review",
       "detail": "Every explanation step cites real evidence and the reply matches the decision.",
-      "timestamp": "2026-10-24T09:30:44.364Z",
+      "timestamp": "2026-10-24T11:46:29.309Z",
       "confidence": null
     },
     {
@@ -328,8 +320,8 @@
       "agent": "reporter",
       "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Confirm order ORD-1028 details and delivery date.\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1028 for the Cotton T-Shirt Pack was delivered on 2026-09-24, with an order total of $34.50 and is not marked final sale.\"}, {\"step\": \"Calculate days since delivery and compare to the 30-day changed-mind window.\", \"evidence_id\": \"E1\", \"detail\": \"31 days have passed since delivery (today 2026-10-25), exceeding the 30-day window.\"}, {\"step\": \"Check whether the order was already refunded.\", \"evidence_id\": \"E2\", \"detail\": \"Order ORD-1028 has not already been refunded.\"}, {\"step\": \"Review the customer\\u2019s refund history for exception rules.\", \"evidence_id\": \"E2\", \"detail\": \"The customer has 1 approved refund in the last 90 days, below the 3-refund human-review threshold.\"}, {\"step\": \"Check the order total against the auto-approval limit.\", \"evidence_id\": \"E3\", \"detail\": \"The order total is $34.50, below the $200.00 auto-approval limit.\"}, {\"step\": \"Apply the changed-mind policy rule R1.\", \"evidence_id\": \"E3\", \"detail\": \"R1 allows unused items to be refunded within 30 days of delivery, but the window has expired and no other rule approves a changed-mind refund outside that window.\"}, {\"step\": \"Final decision: reject the refund because the 30-day window has expired.\", \"evidence_id\": \"E3\", \"detail\": \"The request is rejected with confidence 1.0.\"}]}",
-      "timestamp": "2026-10-24T09:30:44.364Z",
+      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Confirm order ORD-1028 belongs to customer C002 and verify delivery date, status, order total, and final_sale flag.\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1028 for the Cotton T-Shirt Pack belongs to customer C002, was delivered on 2026-09-24, has status delivered, total $34.50, and is not marked final sale.\"}, {\"step\": \"Calculate days since delivery and compare to the 30-day changed-mind window.\", \"evidence_id\": \"E1\", \"detail\": \"31 days have passed since delivery on 2026-09-24 (today 2026-10-25), exceeding the 30-day window.\"}, {\"step\": \"Apply the changed-mind policy window from the refund policy.\", \"evidence_id\": \"E3\", \"detail\": \"Rule R1 allows unused items to be refunded within 30 days of delivery; since the window has expired, no changed-mind refund is approved.\"}, {\"step\": \"Check whether the order was already refunded.\", \"evidence_id\": \"E2\", \"detail\": \"Order ORD-1028 has no refund record; the only refund on file (RF-2004) is for a different order, ORD-1048.\"}, {\"step\": \"Review the customer\\u2019s approved refunds in the last 90 days.\", \"evidence_id\": \"E2\", \"detail\": \"The customer has 1 prior approved refund in the last 90 days, below the 3-refund human-review threshold.\"}, {\"step\": \"Verify the order total is under the $200 auto-approval limit and the item is not final sale.\", \"evidence_id\": \"E1\", \"detail\": \"The order total is $34.50, under the $200.00 limit, and final_sale is false.\"}, {\"step\": \"Finalize the decision.\", \"evidence_id\": \"E3\", \"detail\": \"Because the 30-day changed-mind window has expired and no other rule applies, the refund request is rejected.\"}]}",
+      "timestamp": "2026-10-24T11:46:29.309Z",
       "confidence": null
     },
     {
@@ -337,12 +329,12 @@
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=reject confidence=1.0 model_calls=6/12",
-      "timestamp": "2026-10-24T09:30:44.364Z",
+      "detail": "decision=reject confidence=1.0 model_calls=5/12",
+      "timestamp": "2026-10-24T11:46:29.309Z",
       "confidence": null
     }
   ],
-  "model_calls": 6,
+  "model_calls": 5,
   "scout": {
     "intent": "refund.request",
     "score": 1,
@@ -366,48 +358,48 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5PKQSN12KZSNTBY1PE3MT8M",
+    "contractId": "01M5PVHZ1XK1VB39NZ9856FRDC",
     "clarification": null,
-    "latencyMs": 3.2528
+    "latencyMs": 9.9103
   },
   "explanation": [
     {
-      "step": "Confirm order ORD-1028 details and delivery date.",
+      "step": "Confirm order ORD-1028 belongs to customer C002 and verify delivery date, status, order total, and final_sale flag.",
       "evidence_id": "E1",
-      "detail": "Order ORD-1028 for the Cotton T-Shirt Pack was delivered on 2026-09-24, with an order total of $34.50 and is not marked final sale."
+      "detail": "Order ORD-1028 for the Cotton T-Shirt Pack belongs to customer C002, was delivered on 2026-09-24, has status delivered, total $34.50, and is not marked final sale."
     },
     {
       "step": "Calculate days since delivery and compare to the 30-day changed-mind window.",
       "evidence_id": "E1",
-      "detail": "31 days have passed since delivery (today 2026-10-25), exceeding the 30-day window."
+      "detail": "31 days have passed since delivery on 2026-09-24 (today 2026-10-25), exceeding the 30-day window."
+    },
+    {
+      "step": "Apply the changed-mind policy window from the refund policy.",
+      "evidence_id": "E3",
+      "detail": "Rule R1 allows unused items to be refunded within 30 days of delivery; since the window has expired, no changed-mind refund is approved."
     },
     {
       "step": "Check whether the order was already refunded.",
       "evidence_id": "E2",
-      "detail": "Order ORD-1028 has not already been refunded."
+      "detail": "Order ORD-1028 has no refund record; the only refund on file (RF-2004) is for a different order, ORD-1048."
     },
     {
-      "step": "Review the customer\u2019s refund history for exception rules.",
+      "step": "Review the customer\u2019s approved refunds in the last 90 days.",
       "evidence_id": "E2",
-      "detail": "The customer has 1 approved refund in the last 90 days, below the 3-refund human-review threshold."
+      "detail": "The customer has 1 prior approved refund in the last 90 days, below the 3-refund human-review threshold."
     },
     {
-      "step": "Check the order total against the auto-approval limit.",
-      "evidence_id": "E3",
-      "detail": "The order total is $34.50, below the $200.00 auto-approval limit."
+      "step": "Verify the order total is under the $200 auto-approval limit and the item is not final sale.",
+      "evidence_id": "E1",
+      "detail": "The order total is $34.50, under the $200.00 limit, and final_sale is false."
     },
     {
-      "step": "Apply the changed-mind policy rule R1.",
+      "step": "Finalize the decision.",
       "evidence_id": "E3",
-      "detail": "R1 allows unused items to be refunded within 30 days of delivery, but the window has expired and no other rule approves a changed-mind refund outside that window."
-    },
-    {
-      "step": "Final decision: reject the refund because the 30-day window has expired.",
-      "evidence_id": "E3",
-      "detail": "The request is rejected with confidence 1.0."
+      "detail": "Because the 30-day changed-mind window has expired and no other rule applies, the refund request is rejected."
     }
   ],
-  "trace_id": "trace-20261024-092644-d986f0",
+  "trace_id": "trace-20261024-114322-4db076",
   "request_id": "E1",
-  "log_path": "logs/trace-20261024-092644-d986f0.jsonl"
+  "log_path": "logs/trace-20261024-114322-4db076.jsonl"
 }

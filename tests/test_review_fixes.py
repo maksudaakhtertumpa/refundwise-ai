@@ -199,5 +199,128 @@ class RepairNeverKeepsAWrongAmount(unittest.TestCase):
         self.assertTrue(any("Reply: mentions $9999" in e.detail for e in case.trace if e.action == "review"))
 
 
+class FixedCustomerQueries(unittest.TestCase):
+    """Customer data comes only from fixed queries; the model's SQL may read only the policy table."""
+
+    # Queries that mention customer_id = 'C003' but do not really filter on it.
+    BYPASSES = (
+        "SELECT order_total, 'C003' AS customer_id FROM shop_orders.orders -- WHERE customer_id = 'C003'",
+        "SELECT * FROM shop_orders.orders /* customer_id = 'C003' */",
+        "SELECT * FROM shop_orders.orders WHERE (customer_id = 'C003') IS NOT NULL",
+        "SELECT * FROM shop_orders.orders WHERE (customer_id = 'C003') = FALSE",
+        "SELECT * FROM shop_orders.orders WHERE NOT customer_id = 'C003'",
+        "SELECT * FROM refundwise_mart.orders WHERE customer_id = 'C003' AND 1=1",
+        f"SELECT * FROM {U}.refund_history WHERE customer_id = 'C003'",
+        f"SELECT p.* FROM {U}.refund_policy p JOIN {U}.orders o ON o.category = p.category",
+        "SELECT * FROM support_desk.customers",
+    )
+
+    def test_model_sql_cannot_touch_customer_tables(self):
+        from agent.evidence import model_sql_error
+        for sql in self.BYPASSES:
+            self.assertIsNotNone(model_sql_error(sql), sql)
+        self.assertIsNone(model_sql_error(f"SELECT * FROM {U}.refund_policy WHERE category IN ('Shoes', 'ALL')"))
+        self.assertIsNotNone(model_sql_error(f"SELECT * FROM {U}.refund_policy -- x"))
+
+    def test_fixed_queries_validate_ids(self):
+        from agent.evidence import history_query, order_query
+        self.assertIn("WHERE customer_id = 'C003' AND order_id = 'ORD-1042'", order_query("C003", "ORD-1042"))
+        for bad in ("ORD-1' OR '1'='1", "ORD-1042; DROP", "1042", ""):
+            with self.assertRaises(ValueError, msg=bad):
+                order_query("C003", bad)
+        with self.assertRaises(ValueError):
+            history_query("C003' OR '1'='1")
+
+    def _run_with_tool_calls(self, calls_to_make):
+        sent = {"done": False}
+
+        def chat(messages, lane="fast", tools=None, temperature=0.2, timeout=None):
+            if tools:
+                if sent["done"]:
+                    return {"message": {"role": "assistant", "content": "DONE"}, "model": "scripted", "note": None}
+                sent["done"] = True
+                calls = [{"id": f"t{i}", "type": "function", "function": {"name": n, "arguments": json.dumps(a)}}
+                         for i, (n, a) in enumerate(calls_to_make)]
+                return {"message": {"role": "assistant", "content": "", "tool_calls": calls}, "model": "scripted", "note": None}
+            return {"message": {"role": "assistant", "content": "{}"}, "model": "scripted", "note": None}
+
+        with mock.patch.object(runtime, "chat", chat):
+            return run_case("My hair dryer from ORD-1020 stopped heating. I want a refund.", "C003", demo_today="2026-10-25")
+
+    def test_end_to_end_no_other_customer_row_reaches_the_case(self):
+        from agent.tools_zetaris import run_sql
+        own = {r["order_id"] for r in run_sql("SELECT order_id, customer_id FROM shop_orders.orders")["rows"] if r["customer_id"] == "C003"}
+        batches = ([("run_sql", {"sql": s}) for s in self.BYPASSES[:5]],
+                   [("get_order", {"order_id": "ORD-1031"}),             # belongs to C005
+                    ("get_order", {"order_id": "ORD-1' OR '1'='1"}),
+                    ("run_sql", {"sql": self.BYPASSES[5]}),
+                    ("run_sql", {"sql": self.BYPASSES[6]})])
+        for calls, refusals in zip(batches, (5, 3)):
+            case = self._run_with_tool_calls(calls)
+            for item in case.evidence:
+                for row in item.rows:
+                    if isinstance(row, dict) and "customer_id" in row:
+                        self.assertEqual(row["customer_id"], "C003", item.sql)
+                    if item.source.endswith(".orders"):
+                        self.assertIn(row.get("order_id"), own, item.sql)
+            self.assertEqual(sum(1 for e in case.trace if e.action == "refused_sql"), refusals)
+
+    def test_fixed_tools_return_this_customers_data(self):
+        case = self._run_with_tool_calls([("get_order", {"order_id": "ORD-1020"}), ("get_refund_history", {})])
+        orders = [r for i in case.evidence if i.source.endswith(".orders") for r in i.rows]
+        self.assertTrue(orders and all(r["customer_id"] == "C003" for r in orders))
+        self.assertEqual(orders[0]["order_id"], "ORD-1020")
+
+    def test_order_status_route_rejects_injected_order_id(self):
+        case = run_case("Where is my order ORD-1031' OR '1'='1 ?", "C003", demo_today="2026-10-25")
+        for item in case.evidence:
+            for row in item.rows:
+                self.assertEqual(row.get("customer_id", "C003"), "C003")
+        self.assertNotIn("Linen Summer Dress", case.customer_reply or "")
+
+
+class ItemConditionAndJsonRetry(unittest.TestCase):
+    """Live run 24 Oct: E3 looped on 'is it unopened?' and E1 fell to human review after one bad JSON reply."""
+
+    def test_customer_statement_about_condition(self):
+        from agent.checks import customer_says_unopened as said
+        self.assertTrue(said("It is still unopened in its box"))
+        self.assertTrue(said("I haven't opened it"))
+        self.assertFalse(said("I opened it and it is unused"))
+        self.assertFalse(said("I used it twice"))
+        self.assertIsNone(said("I changed my mind"))
+
+    def _electronics_case(self, message):
+        case = CaseFile(message=message, customer_id="C004", demo_today="2026-10-25")
+        case.order_id, case.reason_type = "ORD-1070", "changed_mind"
+        case.add_evidence(source=f"{U}.orders", sql="", rows=[{
+            "order_id": "ORD-1070", "customer_id": "C004", "order_date": "2026-10-14", "delivery_date": "2026-10-17",
+            "category": "Electronics", "order_total": "69.00", "status": "delivered", "final_sale": "false"}])
+        case.add_evidence(source=f"{U}.refund_history", sql="", rows=[])
+        run_checks(case)
+        case.proposed_decision = {"decision": "approve", "rules_applied": ["R2"], "evidence_ids": ["E1"], "rationale": "8 days."}
+        return case
+
+    def test_r2_approval_needs_the_unopened_statement(self):
+        blocked = " ".join(verify_proposal(self._electronics_case("I changed my mind about ORD-1070.")))
+        self.assertIn("unopened", blocked)
+        self.assertEqual(verify_proposal(self._electronics_case("I changed my mind about ORD-1070. It is still unopened.")), [])
+
+    def test_decide_retries_once_after_invalid_json(self):
+        from agent.decide import propose_decision
+        case = self._electronics_case("I changed my mind about ORD-1070. It is still unopened.")
+        answers = iter(["Let me think about this step by step...",
+                        json.dumps({"decision": "approve", "rules_applied": ["R2"], "confidence": 0.9,
+                                    "rationale": "Within 15 days, unopened (E1).", "evidence_ids": ["E1"]})])
+
+        def chat(messages, lane="fast", tools=None, temperature=0.2, timeout=None):
+            return {"message": {"role": "assistant", "content": next(answers)}, "model": "scripted", "note": None}
+
+        with mock.patch.object(runtime, "chat", chat):
+            propose_decision(case)
+        self.assertEqual(case.proposed_decision["decision"], "approve")
+        self.assertTrue(any(e.action == "retry_json" for e in case.trace))
+
+
 if __name__ == "__main__":
     unittest.main()

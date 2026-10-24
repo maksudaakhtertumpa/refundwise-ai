@@ -22,6 +22,9 @@ Reply with a single JSON object:
   "issues": ["optional list of problems"]
 }
 Use revise only if a specific query would likely change the outcome.
+Item condition (for example "unopened" in R2) is not stored in any table, so no query can find it.
+checks.customer_says_unopened records what the customer stated, and the warehouse verifies it on return:
+treat that check as the evidence for condition and do not ask for more.
 Use escalate when the case is too uncertain for automation.
 """
 

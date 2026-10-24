@@ -9,7 +9,7 @@
     {
       "id": "E1",
       "source": "lightning.metastore.refundwise.refundwise_usl.orders",
-      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE order_id = 'ORD-1070' AND customer_id = 'C004'",
+      "sql": "SELECT order_id, customer_id, order_date, delivery_date, product_name, category, unit_price, quantity, order_total, payment_method, status, final_sale FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE customer_id = 'C004' AND order_id = 'ORD-1070'",
       "rows": [
         {
           "order_id": "ORD-1070",
@@ -31,14 +31,14 @@
     {
       "id": "E2",
       "source": "lightning.metastore.refundwise.refundwise_usl.refund_history",
-      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_history WHERE customer_id = 'C004'",
+      "sql": "SELECT refund_id, customer_id, order_id, request_date, amount, reason, decision FROM lightning.metastore.refundwise.refundwise_usl.refund_history WHERE customer_id = 'C004'",
       "rows": [],
       "note": "lightning.metastore.refundwise.refundwise_usl.refund_history"
     },
     {
       "id": "E3",
       "source": "lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy WHERE category = 'Electronics' OR category = 'ALL'",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy WHERE category IN ('Electronics', 'ALL')",
       "rows": [
         {
           "rule_id": "R1",
@@ -147,7 +147,7 @@
       "R10"
     ],
     "confidence": 1.0,
-    "rationale": "The customer states ORD-1070 never arrived, but E1 records the order as delivered on 2026-10-17, only 11 days after the 2026-10-14 order date. Because the not_received claim conflicts with the order record showing delivery, R10 routes this to human review. R4 does not apply since the item was delivered and fewer than 14 days have passed since the order date.",
+    "rationale": "The customer claims ORD-1070 was never received (not_received), but E1 shows the order status is delivered with delivery_date 2026-10-17, and checks confirm delivered=true only 11 days after the order date. This conflict between the customer's claim and order records triggers R10. R4 does not apply because the item was delivered within 14 days of the order date.",
     "evidence_ids": [
       "E1"
     ]
@@ -178,8 +178,8 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"order.not-received\", \"score\": 0.9347, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PJCHKD060H76JP2ST49AMM\", \"latencyMs\": 10.0496}",
-      "timestamp": "2026-10-24T09:03:07.385Z",
+      "detail": "{\"intent\": \"order.not-received\", \"score\": 0.9347, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PS98CBQ7G8KEQ17ZYJ0GN1\", \"latencyMs\": 12.2369}",
+      "timestamp": "2026-10-24T11:03:39.672Z",
       "confidence": null
     },
     {
@@ -188,7 +188,7 @@
       "model": null,
       "action": "contract.verified",
       "detail": "agent.review: ok",
-      "timestamp": "2026-10-24T09:03:07.385Z",
+      "timestamp": "2026-10-24T11:03:39.672Z",
       "confidence": null
     },
     {
@@ -197,16 +197,16 @@
       "model": null,
       "action": "skipped",
       "detail": "Scout contract already bound order_id=ORD-1070 reason_type=not_received",
-      "timestamp": "2026-10-24T09:03:07.385Z",
+      "timestamp": "2026-10-24T11:03:39.672Z",
       "confidence": null
     },
     {
       "step": "evidence",
       "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T09:03:09.323Z",
+      "timestamp": "2026-10-24T11:03:40.834Z",
       "confidence": null
     },
     {
@@ -215,7 +215,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E1 ok=True source=lightning.metastore.refundwise.refundwise_usl.orders",
-      "timestamp": "2026-10-24T09:03:09.780Z",
+      "timestamp": "2026-10-24T11:03:41.189Z",
       "confidence": null
     },
     {
@@ -224,7 +224,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T09:03:10.552Z",
+      "timestamp": "2026-10-24T11:03:41.866Z",
       "confidence": null
     },
     {
@@ -233,7 +233,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E2 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_history",
-      "timestamp": "2026-10-24T09:03:10.757Z",
+      "timestamp": "2026-10-24T11:03:42.552Z",
       "confidence": null
     },
     {
@@ -242,7 +242,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T09:03:11.718Z",
+      "timestamp": "2026-10-24T11:03:43.881Z",
       "confidence": null
     },
     {
@@ -251,7 +251,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E3 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "timestamp": "2026-10-24T09:03:11.967Z",
+      "timestamp": "2026-10-24T11:03:44.298Z",
       "confidence": null
     },
     {
@@ -260,7 +260,7 @@
       "model": null,
       "action": "compute",
       "detail": "{'days_since_delivery': 8, 'days_since_order': 11, 'delivered': True, 'order_total': 69.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-10-17', 'order_date': '2026-10-14', 'order_found': True, 'order_belongs_to_customer': True}",
-      "timestamp": "2026-10-24T09:03:11.967Z",
+      "timestamp": "2026-10-24T11:03:44.298Z",
       "confidence": null
     },
     {
@@ -269,7 +269,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "propose",
       "detail": "Propose decision from checks and policy",
-      "timestamp": "2026-10-24T09:03:57.015Z",
+      "timestamp": "2026-10-24T11:04:34.451Z",
       "confidence": null
     },
     {
@@ -278,16 +278,16 @@
       "model": null,
       "action": "proposal",
       "detail": "human_review rules=['R10'] evidence=['E1']",
-      "timestamp": "2026-10-24T09:03:57.016Z",
+      "timestamp": "2026-10-24T11:04:34.451Z",
       "confidence": 1.0
     },
     {
       "step": "critic",
       "agent": "critic",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "review",
-      "detail": "Check proposal against evidence and checks",
-      "timestamp": "2026-10-24T09:04:42.052Z",
+      "detail": "Check proposal against evidence and checks (Request on 'nvidia/nemotron-3.5-super-vl-120b-a12b' was aborted; retried on 'nvidia/nemotron-3.5-lightning-30b-a3b'.)",
+      "timestamp": "2026-10-24T11:06:04.515Z",
       "confidence": null
     },
     {
@@ -296,7 +296,7 @@
       "model": null,
       "action": "verify_claims",
       "detail": "All cited evidence, rules, numbers and windows match the checks.",
-      "timestamp": "2026-10-24T09:04:42.052Z",
+      "timestamp": "2026-10-24T11:06:04.515Z",
       "confidence": null
     },
     {
@@ -305,7 +305,7 @@
       "model": null,
       "action": "verdict",
       "detail": "{\"verdict\": \"accept\", \"reason\": \"Customer claims not received but records show delivered.\", \"decision\": \"human_review\", \"revise_target\": null}",
-      "timestamp": "2026-10-24T09:04:42.052Z",
+      "timestamp": "2026-10-24T11:06:04.515Z",
       "confidence": 1.0
     },
     {
@@ -314,7 +314,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "write",
       "detail": "Write customer reply and explanation",
-      "timestamp": "2026-10-24T09:05:27.098Z",
+      "timestamp": "2026-10-24T11:06:49.569Z",
       "confidence": null
     },
     {
@@ -323,7 +323,7 @@
       "model": null,
       "action": "fallback_text",
       "detail": "Used template reply after invalid JSON",
-      "timestamp": "2026-10-24T09:05:27.099Z",
+      "timestamp": "2026-10-24T11:06:49.570Z",
       "confidence": null
     },
     {
@@ -332,7 +332,7 @@
       "model": null,
       "action": "reply",
       "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"lightning.metastore.refundwise.refundwise_usl.orders\", \"evidence_id\": \"E1\", \"detail\": \"lightning.metastore.refundwise.refundwise_usl.orders\"}, {\"step\": \"lightning.metastore.refundwise.refundwise_usl.refund_history\", \"evidence_id\": \"E2\", \"detail\": \"lightning.metastore.refundwise.refundwise_usl.refund_history\"}, {\"step\": \"lightning.metastore.refundwise.refundwise_usl.refund_policy\", \"evidence_id\": \"E3\", \"detail\": \"lightning.metastore.refundwise.refundwise_usl.refund_policy\"}]}",
-      "timestamp": "2026-10-24T09:05:27.099Z",
+      "timestamp": "2026-10-24T11:06:49.570Z",
       "confidence": null
     },
     {
@@ -341,7 +341,7 @@
       "model": null,
       "action": "done",
       "detail": "decision=human_review confidence=1.0 model_calls=6/12",
-      "timestamp": "2026-10-24T09:05:27.099Z",
+      "timestamp": "2026-10-24T11:06:49.570Z",
       "confidence": null
     }
   ],
@@ -369,9 +369,9 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5PJCHKD060H76JP2ST49AMM",
+    "contractId": "01M5PS98CBQ7G8KEQ17ZYJ0GN1",
     "clarification": null,
-    "latencyMs": 10.0496
+    "latencyMs": 12.2369
   },
   "explanation": [
     {
@@ -390,7 +390,7 @@
       "detail": "lightning.metastore.refundwise.refundwise_usl.refund_policy"
     }
   ],
-  "trace_id": "trace-20261024-090307-ec331a",
+  "trace_id": "trace-20261024-110339-439cf7",
   "request_id": "S8",
-  "log_path": "logs/trace-20261024-090307-ec331a.jsonl"
+  "log_path": "logs/trace-20261024-110339-439cf7.jsonl"
 }

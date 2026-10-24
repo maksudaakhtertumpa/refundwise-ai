@@ -49,7 +49,7 @@ flowchart LR
 
     subgraph P["Multi-agent refund review (Python, agent/)"]
         direction TB
-        IN[Intake<br/>skipped if Scout bound params] --> EV[Evidence agent<br/>tool-calling run_sql]
+        IN[Intake<br/>skipped if Scout bound params] --> EV[Evidence agent<br/>fixed customer queries + policy SQL]
         EV --> CK[Deterministic checks<br/>Python, authoritative]
         CK --> DE[Decide<br/>Nemotron Super]
         DE --> CR[Critic<br/>Nemotron Super]
@@ -77,7 +77,7 @@ The same diagram as an image: [`docs/architecture.png`](docs/architecture.png).
 **How a refund is decided**
 
 1. **Scout Intent** (`scout/`) classifies the message, binds `order_id` and `reason_type`, runs five guard layers and signs a contract that lists the allowed capabilities. `agent/scout_gate.py` recomputes the HMAC and checks expiry, scope and required approvals.
-2. **Evidence agent** (`agent/evidence.py`) has the model call a `run_sql` tool against Zetaris. Every query is checked twice before it runs. `tools_zetaris.py` allows single read-only statements on four allow-listed tables only. `scope_error_for` refuses order and refund-history queries, under any table name (semantic layer, data mart, source or bare), that do not filter on `customer_id = '<this customer>'` or that use `OR`, `UNION` or subqueries, and the customers table is never available to the model. Then `enforce_customer_rows` drops any returned row whose `customer_id` is not this customer's, so isolation holds even if a query slips through; for order and refund-history queries, rows without a `customer_id` column are dropped too. Refused queries and removed rows appear in the trace.
+2. **Evidence agent** (`agent/evidence.py`) gives the model three tools. **Customer data comes only from fixed queries:** `get_order(order_id)` and `get_refund_history()` run queries written in code, with the customer id taken from the case (never from the model) and both ids checked against strict patterns before they go into the `WHERE` clause. Zetaris's REST SQL endpoint has no bind parameters, so this validation plus quoting is what keeps the values safe. The model's own SQL (`run_sql`) may read only the `refund_policy` table, which holds no customer data; any query that names orders, refund history or customers, under any table name, or that contains a SQL comment, is refused. `tools_zetaris.py` also allows only single read-only statements on allow-listed tables. As a last layer, `enforce_customer_rows` drops any returned row whose `customer_id` is not this customer's. The order-status route and the fallback queries use the same fixed queries. Refused queries and removed rows appear in the trace.
 3. **Checks** (`agent/checks.py`) compute the facts in plain Python: days since delivery, order ownership, prior approved refunds in 90 days, final sale, already refunded, over the limit. The model is told these are authoritative.
 4. **Decide** proposes approve / reject / human_review with rules and evidence ids. The **critic** model reviews it, then the **policy verifier** (`agent/verifier.py`) checks the same proposal in Python: cited evidence must exist, cited rules must fit the order's category and reason (Electronics change of mind is R2, not R1), numbers must match the checks, and approvals must respect the policy windows. Any mismatch sends the proposal back to decide with the exact issues (at most 2 rounds, then human review). Hard guards (`agent/critic.py`) override the model for R7–R10, so a persuasive model cannot approve a $1,249 laptop or a refund on an order owned by someone else.
 5. **Reporter** writes the customer reply and a "why" list. Each line cites an evidence id (E1, E2…) that the UI expands into the exact SQL and rows. The **final reviewer** rejects a reply whose steps cite no real evidence id or that tells the customer "approved" when the decision is not, and the reporter rewrites it once.
@@ -144,7 +144,7 @@ cp .env.example .env        # then fill in your own values; never commit .env
 `SAMPLE_MODE=true` replaces Zetaris with a SQLite copy of the CSV snapshot in `data/`. It loads sample **input data only**, never saved answers. Without Nightshift, Scout routing, order status, policy questions and injection blocking still work fully. Refund cases still collect evidence and run the Python checks, then fall back to the deterministic policy guards (R7–R10) or human review. They never auto-approve without the model.
 
 ```bash
-SAMPLE_MODE=true .venv/bin/python -m unittest discover tests -v   # 38 tests, no services needed
+SAMPLE_MODE=true .venv/bin/python -m unittest discover tests -v   # 46 tests, no services needed
 SAMPLE_MODE=true .venv/bin/python run.py --input input_examples/example_3.json
 SAMPLE_MODE=true .venv/bin/streamlit run app.py --server.address localhost
 ```
@@ -259,7 +259,7 @@ Inside the container, `localhost` is the container itself. To reach Zetaris and 
 **Tests**
 
 ```bash
-.venv/bin/python -m unittest discover tests -v   # 38 tests: SQL safety, scope, semantic-layer names, guards, contracts, entry point, logs, critic loop, final reviewer, customer isolation, R4 gate, no secrets, no output_examples at runtime
+.venv/bin/python -m unittest discover tests -v   # 46 tests: SQL safety, scope, semantic-layer names, guards, contracts, entry point, logs, critic loop, final reviewer, customer isolation, R4 gate, no secrets, no output_examples at runtime
 .venv/bin/python scripts/run_demo.py input_examples/edge_cases.json   # 4 boundary cases (windows, category rules, final sale)
 bash scripts/run_scout_evals.sh                  # Scout Intent: official harness + regression + feature tests
 ```
@@ -304,6 +304,7 @@ All data is synthetic, generated by `scripts/gen_data.py` with a fixed seed: 48 
 - Scout runs Stage 1 (lexical) only. New phrasings it is unsure about become a clarifying question rather than a wrong action, which is the spec's intended safe behaviour. See [scout/README.md](scout/README.md).
 - The contract HMAC protects integrity between Scout and the executor. It does not replace user authentication; in this demo the customer id is selected in the UI.
 - Confidence is uncalibrated: it is either the model's own estimate or a fixed value set by a policy guard, not a measured probability of being right. The UI labels it that way.
+- Item condition is not stored anywhere. R2 (Electronics change of mind) needs the item unopened, so a Python check records what the customer says (`customer_says_unopened`); an approval under R2 is blocked unless the customer said it is unopened, and the warehouse is expected to verify the condition when the return arrives.
 - RefundWise decides; it does not move money. Replies say a request is approved for processing and never promise payment timing.
 - The policy has 10 rules and the dataset is small. This is a working prototype, not a production system.
 - The Zetaris data mart and semantic layer are built once by hand in the Zetaris UI (steps in `data/zetaris_semantic_layer.sql`). A fresh install without them still runs, on the source tables.

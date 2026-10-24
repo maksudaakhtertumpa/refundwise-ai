@@ -9,14 +9,21 @@
     {
       "id": "E1",
       "source": "lightning.metastore.refundwise.refundwise_usl.orders",
-      "sql": "SELECT order_id, product_name, order_date, delivery_date, status FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE order_id = 'ORD-1042' AND customer_id = 'C003'",
+      "sql": "SELECT order_id, customer_id, order_date, delivery_date, product_name, category, unit_price, quantity, order_total, payment_method, status, final_sale FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE customer_id = 'C003' AND order_id = 'ORD-1042'",
       "rows": [
         {
           "order_id": "ORD-1042",
-          "product_name": "Trail Running Shoes",
+          "customer_id": "C003",
           "order_date": "2026-10-07",
           "delivery_date": "2026-10-10",
-          "status": "delivered"
+          "product_name": "Trail Running Shoes",
+          "category": "Shoes",
+          "unit_price": "89.00",
+          "quantity": "1",
+          "order_total": "89.00",
+          "payment_method": "credit_card",
+          "status": "delivered",
+          "final_sale": "false"
         }
       ],
       "note": "order status"
@@ -36,8 +43,8 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"order.status\", \"score\": 0.9088, \"band\": \"high\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5PJGT65X1EEXW0H68ASWBQW\", \"latencyMs\": 3.6334}",
-      "timestamp": "2026-10-24T09:05:27.241Z",
+      "detail": "{\"intent\": \"order.status\", \"score\": 0.9088, \"band\": \"high\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5PSF1ZAEN14H2Z4P92TQ7RR\", \"latencyMs\": 2.8005}",
+      "timestamp": "2026-10-24T11:06:49.709Z",
       "confidence": null
     },
     {
@@ -46,7 +53,7 @@
       "model": null,
       "action": "contract.verified",
       "detail": "order.lookup: ok",
-      "timestamp": "2026-10-24T09:05:27.242Z",
+      "timestamp": "2026-10-24T11:06:49.710Z",
       "confidence": null
     },
     {
@@ -55,7 +62,7 @@
       "model": null,
       "action": "done",
       "detail": "decision=answered routed_by=scout intent=order.status model_calls=0",
-      "timestamp": "2026-10-24T09:05:27.713Z",
+      "timestamp": "2026-10-24T11:06:49.967Z",
       "confidence": null
     }
   ],
@@ -78,12 +85,12 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5PJGT65X1EEXW0H68ASWBQW",
+    "contractId": "01M5PSF1ZAEN14H2Z4P92TQ7RR",
     "clarification": null,
-    "latencyMs": 3.6334
+    "latencyMs": 2.8005
   },
   "explanation": [],
-  "trace_id": "trace-20261024-090527-ec5caa",
+  "trace_id": "trace-20261024-110649-563fb2",
   "request_id": "S10",
-  "log_path": "logs/trace-20261024-090527-ec5caa.jsonl"
+  "log_path": "logs/trace-20261024-110649-563fb2.jsonl"
 }

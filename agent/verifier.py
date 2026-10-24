@@ -89,6 +89,9 @@ def verify_proposal(case: CaseFile) -> list[str]:
                 issues.append("Approves 'not received' without an order date; R4 cannot be checked.")
             elif days_order < 14:
                 issues.append(f"Approves 'not received' only {days_order} days after ordering; R4 requires 14 days.")
+        if reason == "changed_mind" and category == "Electronics" and checks.get("customer_says_unopened") is not True:
+            issues.append("Approves an Electronics change-of-mind return, but R2 requires the item to be unopened "
+                          "and the customer has not said it is.")
         if reason == "changed_mind" and days_delivery is not None:
             window = 15 if category == "Electronics" else 30
             if days_delivery > window:

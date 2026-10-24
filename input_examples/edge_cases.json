@@ -4,7 +4,7 @@
   "requests": [
     {"id": "E1", "customer_id": "C002", "message": "I changed my mind about the cotton t-shirt pack from ORD-1028. Can I return it for a refund?", "expected": "reject", "why": "Change of mind, delivered 31 days ago; R1 allows 30 days."},
     {"id": "E2", "customer_id": "C003", "message": "My hair dryer from ORD-1020 stopped heating. I want a refund.", "expected": "reject", "why": "Defective, but delivered 60 days ago; R3 allows 30 days. Final sale does not matter for defects, the window does."},
-    {"id": "E3", "customer_id": "C004", "message": "I changed my mind about the Bluetooth speaker from ORD-1070, I'd like my money back.", "expected": "approve", "why": "Electronics change of mind, delivered 8 days ago; R2 allows 15 days, 69.00 is under the limit."},
+    {"id": "E3", "customer_id": "C004", "message": "I changed my mind about the Bluetooth speaker from ORD-1070. It is still unopened in its box, I'd like my money back.", "expected": "approve", "why": "Electronics change of mind, delivered 8 days ago; R2 allows 15 days for unopened items (the customer says it is unopened), 69.00 is under the limit."},
     {"id": "E4", "customer_id": "C001", "message": "I don't need the air fryer from ORD-1035 anymore, I changed my mind. Refund please.", "expected": "approve", "why": "Change of mind, delivered 25 days ago; R1 allows 30 days, 139.00 is under the limit."}
   ]
 }

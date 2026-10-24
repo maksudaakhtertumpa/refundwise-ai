@@ -17,47 +17,62 @@ SCHEMA = """Zetaris Unified Semantic Layer refundwise_usl: one typed model with 
 keys over three separate systems (orders from the order system, refund_history from the support desk,
 refund_policy from the policy knowledge base). Always use the full table names below. Values come back as strings.
 
-lightning.metastore.refundwise.refundwise_usl.orders(
-  order_id, customer_id, order_date, delivery_date, product_name, category,
-  unit_price, quantity, order_total, payment_method, status, final_sale
-)
-lightning.metastore.refundwise.refundwise_usl.refund_history(
-  refund_id, customer_id, order_id, request_date, amount, reason, decision
-)
+Customer data is never queried with your own SQL. Use the fixed tools:
+- get_order(order_id): this customer's order row (columns order_id, customer_id, order_date,
+  delivery_date, product_name, category, unit_price, quantity, order_total, payment_method, status, final_sale)
+- get_refund_history(): this customer's refund history (refund_id, customer_id, order_id,
+  request_date, amount, reason, decision)
+The customer id is filled in by the system; you cannot change it.
+
+run_sql is only for the policy table, which holds no customer data:
 lightning.metastore.refundwise.refundwise_usl.refund_policy(
   rule_id, category, reason_type, window_days, auto_approve_limit, outcome, rule_text
 )
+Read-only SELECT only, one statement, no comments. Any other table is refused.
 
 You must collect:
-(a) the order row for this order_id and customer_id
-(b) this customer's full refund_history
-(c) refund_policy rows for the order's category AND category = 'ALL'
-
-Read-only SELECT/WITH only, one statement per call. Use literal quoted strings (no bind parameters).
-Every query on lightning.metastore.refundwise.refundwise_usl.orders or lightning.metastore.refundwise.refundwise_usl.refund_history MUST filter on this
-customer's customer_id; other queries are refused.
-Call run_sql for each query. After you have a, b and c, stop calling tools and reply DONE.
+(a) get_order for this order id
+(b) get_refund_history
+(c) refund_policy rows for the order's category AND category = 'ALL' (run_sql)
+After you have a, b and c, stop calling tools and reply DONE.
 """
 
 RUN_SQL_TOOL = [
     {
         "type": "function",
         "function": {
+            "name": "get_order",
+            "description": "Fixed query: this customer's order row. The customer id is set by the system.",
+            "parameters": {
+                "type": "object",
+                "properties": {"order_id": {"type": "string", "description": "Order id such as ORD-1042."}},
+                "required": ["order_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_refund_history",
+            "description": "Fixed query: this customer's refund history. The customer id is set by the system.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "run_sql",
-            "description": "Run a read-only SQL query against Zetaris.",
+            "description": "Read-only SELECT on the refund_policy table only (no customer data).",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "sql": {
-                        "type": "string",
-                        "description": "SELECT/WITH query using source.table names.",
-                    },
+                    "sql": {"type": "string", "description": "SELECT on lightning.metastore.refundwise.refundwise_usl.refund_policy."},
                     "limit": {"type": "integer", "description": "Max rows (default 100)."},
                 },
                 "required": ["sql"],
             },
         },
-    }
+    },
 ]
 
 
@@ -120,15 +135,9 @@ def _tool_loop(case: CaseFile, extra_request: str | None) -> bool:
             if tool_calls_used >= MAX_TOOL_CALLS:
                 break
             tool_calls_used += 1
-            sql, limit = _sql_from_call(call)
-            scope_error = scope_error_for(sql, case.customer_id) if sql else None
-            if scope_error:
-                payload = {"ok": False, "sql": sql, "rows": [], "error": scope_error}
-                case.add_trace(step="evidence", agent="evidence", action="refused_sql", detail=scope_error)
-            elif sql:
-                payload = run_sql(sql, limit=limit)
-            else:
-                payload = {"ok": False, "sql": sql, "rows": [], "error": "Missing sql argument"}
+            sql, payload, refusal = _execute_call(case, call)
+            if refusal:
+                case.add_trace(step="evidence", agent="evidence", action="refused_sql", detail=refusal)
             if payload.get("ok"):
                 kept, removed = enforce_customer_rows(payload.get("rows") or [], infer_source(sql), case.customer_id, sql)
                 if removed:
@@ -213,27 +222,18 @@ def _run_fallbacks(case: CaseFile, *, reason: str) -> None:
 
 def _fallback_queries(case: CaseFile, category: str | None) -> list[tuple[str, str, str]]:
     """Parameterised order, history and policy SELECTs."""
-    cid = _sql_literal(case.customer_id)
-    oid = _sql_literal(case.order_id or "")
-    queries = [
-        (
-            "lightning.metastore.refundwise.refundwise_usl.orders",
-            (
-                "SELECT order_id, customer_id, order_date, delivery_date, product_name, "
-                "category, unit_price, quantity, order_total, payment_method, status, final_sale "
-                f"FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE order_id = {oid} AND customer_id = {cid}"
-            ),
-            "order row",
-        ),
-        (
-            "lightning.metastore.refundwise.refundwise_usl.refund_history",
-            (
-                "SELECT refund_id, customer_id, order_id, request_date, amount, reason, decision "
-                f"FROM lightning.metastore.refundwise.refundwise_usl.refund_history WHERE customer_id = {cid}"
-            ),
-            "customer refund history",
-        ),
-    ]
+    # Same fixed, validated queries as the get_order / get_refund_history tools.
+    queries: list[tuple[str, str, str]] = []
+    try:
+        queries.append(("lightning.metastore.refundwise.refundwise_usl.orders",
+                        order_query(case.customer_id, case.order_id or ""), "order row"))
+    except ValueError:
+        pass  # no valid order id: the order stays missing and the case goes to human review
+    try:
+        queries.append(("lightning.metastore.refundwise.refundwise_usl.refund_history",
+                        history_query(case.customer_id), "customer refund history"))
+    except ValueError:
+        pass
     if category:
         cat = _sql_literal(category)
         policy_sql = (
@@ -268,6 +268,76 @@ def _unquote(sql: str) -> str:
 def tables_in(sql: str) -> set[str]:
     """Canonical semantic-layer names of every RefundWise table a query mentions, under any name."""
     return {f"{_USL_PREFIX}.{t}" for t in _TABLE_WORD.findall(_strip_literals(_unquote(sql)))}
+
+
+_SAFE_CUSTOMER_ID = re.compile(r"[A-Za-z0-9_-]{1,32}")
+_SAFE_ORDER_ID = re.compile(r"ORD-\d{1,10}", re.IGNORECASE)
+_ORDER_COLUMNS = ("order_id, customer_id, order_date, delivery_date, product_name, category, "
+                  "unit_price, quantity, order_total, payment_method, status, final_sale")
+_HISTORY_COLUMNS = "refund_id, customer_id, order_id, request_date, amount, reason, decision"
+
+
+def _checked_customer(customer_id: str) -> str:
+    if not _SAFE_CUSTOMER_ID.fullmatch(str(customer_id or "")):
+        raise ValueError("customer id has unexpected characters")
+    return str(customer_id)
+
+
+def order_query(customer_id: str, order_id: str) -> str:
+    """Fixed order query. Both ids are validated against a strict pattern before they enter the WHERE clause."""
+    cid = _checked_customer(customer_id)
+    if not _SAFE_ORDER_ID.fullmatch(str(order_id or "")):
+        raise ValueError("order id must look like ORD-1042")
+    return (f"SELECT {_ORDER_COLUMNS} FROM {_USL_PREFIX}.orders "
+            f"WHERE customer_id = {_sql_literal(cid)} AND order_id = {_sql_literal(order_id.upper())}")
+
+
+def history_query(customer_id: str) -> str:
+    """Fixed refund-history query for one validated customer id."""
+    cid = _checked_customer(customer_id)
+    return f"SELECT {_HISTORY_COLUMNS} FROM {_USL_PREFIX}.refund_history WHERE customer_id = {_sql_literal(cid)}"
+
+
+def model_sql_error(sql: str) -> str | None:
+    """Model-written SQL may read only the refund policy, which holds no customer data."""
+    if not sql:
+        return "Missing sql argument"
+    bare = _strip_literals(_unquote(sql))
+    if "--" in bare or "/*" in bare or "#" in bare:
+        return "Query refused: SQL comments are not allowed"
+    if tables_in(sql) != {f"{_USL_PREFIX}.refund_policy"}:
+        return ("Query refused: run_sql may read only the refund_policy table; "
+                "use get_order and get_refund_history for this customer's data")
+    return None
+
+
+def _execute_call(case: CaseFile, call: dict[str, Any]) -> tuple[str, dict[str, Any], str | None]:
+    """Run one tool call. Customer data comes only from the fixed queries; returns (sql, payload, refusal)."""
+    name, args = _call_parts(call)
+
+    def refused(sql: str, why: str):
+        return sql, {"ok": False, "sql": sql, "rows": [], "error": why}, why
+
+    if name == "get_order":
+        order_id = str(args.get("order_id") or case.order_id or "").strip()
+        try:
+            sql = order_query(case.customer_id, order_id)
+        except ValueError as exc:
+            return refused("", f"Query refused: {exc}")
+        return sql, run_sql(sql), None
+    if name == "get_refund_history":
+        try:
+            sql = history_query(case.customer_id)
+        except ValueError as exc:
+            return refused("", f"Query refused: {exc}")
+        return sql, run_sql(sql), None
+    if name in (None, "", "run_sql"):
+        sql, limit = _sql_from_call(call)
+        why = model_sql_error(sql)
+        if why:
+            return refused(sql, why)
+        return sql, run_sql(sql, limit=limit), None
+    return refused("", f"Unknown tool {name!r}")
 
 
 def scope_error_for(sql: str, customer_id: str) -> str | None:
@@ -393,12 +463,10 @@ def _tool_calls(message: dict[str, Any]) -> list[dict[str, Any]]:
     return []
 
 
-def _sql_from_call(call: dict[str, Any]) -> tuple[str, int]:
-    """Extract sql and limit from a tool call."""
+def _call_parts(call: dict[str, Any]) -> tuple[str | None, dict[str, Any]]:
+    """Tool name and parsed arguments of a tool call."""
     fn = call.get("function") or call
     name = (fn.get("name") if isinstance(fn, dict) else None) or call.get("name")
-    if name and name != "run_sql":
-        return "", 100
     arguments = fn.get("arguments") if isinstance(fn, dict) else call.get("arguments")
     parsed: dict[str, Any] = {}
     if isinstance(arguments, dict):
@@ -410,6 +478,14 @@ def _sql_from_call(call: dict[str, Any]) -> tuple[str, int]:
                 parsed = loaded
         except json.JSONDecodeError:
             parsed = {"sql": arguments}
+    return name, parsed
+
+
+def _sql_from_call(call: dict[str, Any]) -> tuple[str, int]:
+    """Extract sql and limit from a run_sql tool call."""
+    name, parsed = _call_parts(call)
+    if name and name != "run_sql":
+        return "", 100
     sql = str(parsed.get("sql") or parsed.get("query") or "").strip()
     try:
         limit = int(parsed.get("limit") or 100)

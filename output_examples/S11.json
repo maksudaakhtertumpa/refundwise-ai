@@ -93,8 +93,8 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"policy.question\", \"score\": 0.5705, \"band\": \"medium\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5PJGTQ0EANJCJDTBB16640Y\", \"latencyMs\": 3.5785}",
-      "timestamp": "2026-10-24T09:05:27.779Z",
+      "detail": "{\"intent\": \"policy.question\", \"score\": 0.5705, \"band\": \"medium\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5PSF29CGEBJRAS4BH6BF8MR\", \"latencyMs\": 3.7191}",
+      "timestamp": "2026-10-24T11:06:50.032Z",
       "confidence": null
     },
     {
@@ -103,7 +103,7 @@
       "model": null,
       "action": "contract.verified",
       "detail": "policy.lookup: ok",
-      "timestamp": "2026-10-24T09:05:27.779Z",
+      "timestamp": "2026-10-24T11:06:50.032Z",
       "confidence": null
     },
     {
@@ -112,7 +112,7 @@
       "model": null,
       "action": "done",
       "detail": "decision=answered routed_by=scout intent=policy.question model_calls=0",
-      "timestamp": "2026-10-24T09:05:28.038Z",
+      "timestamp": "2026-10-24T11:06:50.269Z",
       "confidence": null
     }
   ],
@@ -133,12 +133,12 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5PJGTQ0EANJCJDTBB16640Y",
+    "contractId": "01M5PSF29CGEBJRAS4BH6BF8MR",
     "clarification": null,
-    "latencyMs": 3.5785
+    "latencyMs": 3.7191
   },
   "explanation": [],
-  "trace_id": "trace-20261024-090527-fc7bb4",
+  "trace_id": "trace-20261024-110649-12f7e9",
   "request_id": "S11",
-  "log_path": "logs/trace-20261024-090527-fc7bb4.jsonl"
+  "log_path": "logs/trace-20261024-110649-12f7e9.jsonl"
 }

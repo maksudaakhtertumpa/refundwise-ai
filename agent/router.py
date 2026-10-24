@@ -18,6 +18,7 @@ import json
 import re
 
 from agent import scout_gate
+from agent.evidence import order_query
 from agent.state import CaseFile
 from agent.tools_zetaris import run_sql
 
@@ -148,13 +149,13 @@ def _verify(case: CaseFile, contract: dict | None, capability: str) -> tuple[boo
 
 def _answer_status(case: CaseFile, order_id: str | None) -> None:
     """Order tracking: one read-only Zetaris query, then a templated reply."""
-    if not order_id or not _ORDER_ID.match(order_id):
+    try:
+        # The same fixed, validated query the evidence agent uses: both ids must match strict patterns.
+        sql = order_query(case.customer_id, order_id or "")
+    except ValueError:
         _finish(case, "needs_info", None, "Could you share your order number (it looks like ORD-1234)?")
         return
-    sql = (
-        "SELECT order_id, product_name, order_date, delivery_date, status "
-        f"FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE order_id = '{order_id}' AND customer_id = '{case.customer_id}'"
-    )
+    order_id = order_id.upper()
     res = run_sql(sql)
     item = case.add_evidence(source="lightning.metastore.refundwise.refundwise_usl.orders", sql=sql, rows=res.get("rows", []), note="order status")
     case.order_id = order_id

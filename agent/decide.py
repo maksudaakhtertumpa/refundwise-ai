@@ -25,6 +25,9 @@ Reply with a single JSON object:
 Guidance:
 - Defective items within 30 days of delivery: R3 approve if under 200.00.
 - Change of mind: R1 30 days, except Electronics R2 15 days.
+- R2 also requires the item to be unopened. The database has no item condition; checks.customer_says_unopened
+  records what the customer stated (the warehouse verifies it on return). Approve under R2 only if it is true;
+  if it is false, reject; if it is null, use human_review.
 - Not received and not delivered 14+ days after order: R4 approve.
 - Final sale: R5 reject unless defective.
 - Digital once delivered: R6 reject unless it does not work.
@@ -41,6 +44,10 @@ issue it lists, using only the checks and evidence.
 def propose_decision(case: CaseFile) -> None:
     """Ask the deep model for a proposed decision and store it on the case."""
     payload = _ask(case)
+    if payload is None:
+        case.add_trace(step="decide", agent="decide", action="retry_json",
+                       detail="Proposal was not valid JSON; asking once more")
+        payload = _ask(case, retry=True)
     if payload is None:
         payload = {
             "decision": "human_review",
@@ -68,8 +75,11 @@ def propose_decision(case: CaseFile) -> None:
     case.rules_applied = payload["rules_applied"]
 
 
-def _ask(case: CaseFile) -> dict | None:
-    """Request a JSON proposal from the deep lane."""
+def _ask(case: CaseFile, retry: bool = False) -> dict | None:
+    """Request a JSON proposal from the deep lane (on a retry, insist on JSON only)."""
+    content = _user_payload(case)
+    if retry:
+        content += "\n\nYour previous answer was not a valid JSON object. Reply with only the JSON object, nothing else."
     result = tracked_chat(
         case,
         agent="decide",
@@ -77,10 +87,10 @@ def _ask(case: CaseFile) -> dict | None:
         action="propose",
         messages=[
             {"role": "system", "content": _SYSTEM},
-            {"role": "user", "content": _user_payload(case)},
+            {"role": "user", "content": content},
         ],
         lane="deep",
-        detail="Propose decision from checks and policy",
+        detail="Retry proposal as JSON only" if retry else "Propose decision from checks and policy",
     )
     return validate_proposal(extract_json_object(message_text(result.get("message"))))
 

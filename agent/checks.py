@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date, datetime, timedelta
 from typing import Any
 
@@ -46,6 +47,7 @@ def run_checks(case: CaseFile) -> None:
         "order_date": order_date.isoformat() if order_date else None,
         "order_found": order_found,
         "order_belongs_to_customer": belongs,
+        "customer_says_unopened": customer_says_unopened(case.message),
     }
     case.add_trace(
         step="checks",
@@ -53,6 +55,28 @@ def run_checks(case: CaseFile) -> None:
         action="compute",
         detail=str(case.checks),
     )
+
+
+_UNOPENED = re.compile(
+    r"\b(unopened|un-opened|never (?:been )?opened|not (?:been )?opened|(?:haven't|have not|hasn't|has not|didn't|did not) (?:even )?(?:been )?open(?:ed)?(?: it)?|"
+    r"still sealed|sealed|unused|never used|still in (?:its|the) (?:box|packaging|original packaging))\b",
+    re.IGNORECASE,
+)
+_OPENED = re.compile(r"\b(opened|used|tried|unboxed|unsealed|worn)\b", re.IGNORECASE)
+
+
+def customer_says_unopened(message: str | None) -> bool | None:
+    """What the customer states about the item's condition: True (unopened), False (opened) or None (not said).
+
+    The database holds no item condition; R2 needs it, and the warehouse verifies it when the return arrives.
+    A message that says both (for example "I opened it, it is unused") counts as opened, the safe reading.
+    """
+    text = message or ""
+    says_unopened = bool(_UNOPENED.search(text))
+    rest = _UNOPENED.sub(" ", text)
+    if _OPENED.search(rest):
+        return False
+    return True if says_unopened else None
 
 
 def _already_refunded(status: str, history: list[dict], order_id: str | None) -> bool:

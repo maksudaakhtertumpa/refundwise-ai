@@ -9,7 +9,7 @@
     {
       "id": "E1",
       "source": "lightning.metastore.refundwise.refundwise_usl.orders",
-      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE customer_id = 'C011' AND order_id = 'ORD-1055'",
+      "sql": "SELECT order_id, customer_id, order_date, delivery_date, product_name, category, unit_price, quantity, order_total, payment_method, status, final_sale FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE customer_id = 'C011' AND order_id = 'ORD-1055'",
       "rows": [
         {
           "order_id": "ORD-1055",
@@ -31,14 +31,14 @@
     {
       "id": "E2",
       "source": "lightning.metastore.refundwise.refundwise_usl.refund_history",
-      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_history WHERE customer_id = 'C011'",
+      "sql": "SELECT refund_id, customer_id, order_id, request_date, amount, reason, decision FROM lightning.metastore.refundwise.refundwise_usl.refund_history WHERE customer_id = 'C011'",
       "rows": [],
       "note": "lightning.metastore.refundwise.refundwise_usl.refund_history"
     },
     {
       "id": "E3",
       "source": "lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy WHERE category = 'Electronics' OR category = 'ALL'",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy WHERE category IN ('Electronics', 'ALL')",
       "rows": [
         {
           "rule_id": "R1",
@@ -166,14 +166,14 @@
     }
   },
   "decision": "human_review",
-  "confidence": 1.0,
+  "confidence": 0.95,
   "rules_applied": [
     "R3",
     "R7"
   ],
-  "customer_reply": "Thank you for writing in. A support lead will review this request and contact you shortly.",
+  "customer_reply": "Thank you for writing in. A support lead will review this request and get back to you shortly.",
   "limitations": [
-    "Automated reply; reporter model did not return JSON."
+    "The AI model was not available or did not answer in time; the decision comes from the deterministic policy guard R7: Order total exceeds the 200.00 auto-approve limit."
   ],
   "trace": [
     {
@@ -181,8 +181,8 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"refund.request\", \"score\": 0.9502, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PHGKM3HFGBQBP1GQMSK1DB\", \"latencyMs\": 6.609}",
-      "timestamp": "2026-10-24T08:47:51.947Z",
+      "detail": "{\"intent\": \"refund.request\", \"score\": 0.9502, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PREAW8Y5EY3HNNGTXQS9G6\", \"latencyMs\": 10.8998}",
+      "timestamp": "2026-10-24T10:48:57.492Z",
       "confidence": null
     },
     {
@@ -191,7 +191,7 @@
       "model": null,
       "action": "contract.verified",
       "detail": "agent.review: ok",
-      "timestamp": "2026-10-24T08:47:51.947Z",
+      "timestamp": "2026-10-24T10:48:57.492Z",
       "confidence": null
     },
     {
@@ -200,7 +200,7 @@
       "model": null,
       "action": "skipped",
       "detail": "Scout contract already bound order_id=ORD-1055 reason_type=defective",
-      "timestamp": "2026-10-24T08:47:51.947Z",
+      "timestamp": "2026-10-24T10:48:57.492Z",
       "confidence": null
     },
     {
@@ -209,7 +209,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T08:47:53.374Z",
+      "timestamp": "2026-10-24T10:48:58.961Z",
       "confidence": null
     },
     {
@@ -218,16 +218,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E1 ok=True source=lightning.metastore.refundwise.refundwise_usl.orders",
-      "timestamp": "2026-10-24T08:47:54.326Z",
-      "confidence": null
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-      "action": "tool_round",
-      "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T08:47:55.344Z",
+      "timestamp": "2026-10-24T10:48:59.731Z",
       "confidence": null
     },
     {
@@ -236,7 +227,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E2 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_history",
-      "timestamp": "2026-10-24T08:47:55.546Z",
+      "timestamp": "2026-10-24T10:48:59.875Z",
       "confidence": null
     },
     {
@@ -245,7 +236,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T08:47:57.180Z",
+      "timestamp": "2026-10-24T10:49:00.793Z",
       "confidence": null
     },
     {
@@ -254,7 +245,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E3 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "timestamp": "2026-10-24T08:47:57.449Z",
+      "timestamp": "2026-10-24T10:49:01.088Z",
       "confidence": null
     },
     {
@@ -263,7 +254,7 @@
       "model": null,
       "action": "compute",
       "detail": "{'days_since_delivery': 10, 'days_since_order': 13, 'delivered': True, 'order_total': 1249.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': True, 'order_status': 'delivered', 'delivery_date': '2026-10-15', 'order_date': '2026-10-12', 'order_found': True, 'order_belongs_to_customer': True}",
-      "timestamp": "2026-10-24T08:47:57.449Z",
+      "timestamp": "2026-10-24T10:49:01.088Z",
       "confidence": null
     },
     {
@@ -272,7 +263,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "propose",
       "detail": "Propose decision from checks and policy",
-      "timestamp": "2026-10-24T08:48:43.492Z",
+      "timestamp": "2026-10-24T10:49:52.180Z",
       "confidence": null
     },
     {
@@ -281,7 +272,7 @@
       "model": null,
       "action": "proposal",
       "detail": "human_review rules=['R3', 'R7'] evidence=['E1', 'E2']",
-      "timestamp": "2026-10-24T08:48:43.492Z",
+      "timestamp": "2026-10-24T10:49:52.180Z",
       "confidence": 1.0
     },
     {
@@ -290,7 +281,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "review",
       "detail": "Check proposal against evidence and checks",
-      "timestamp": "2026-10-24T08:49:28.531Z",
+      "timestamp": "2026-10-24T10:50:51.502Z",
       "confidence": null
     },
     {
@@ -299,7 +290,7 @@
       "model": null,
       "action": "verify_claims",
       "detail": "All cited evidence, rules, numbers and windows match the checks.",
-      "timestamp": "2026-10-24T08:49:28.531Z",
+      "timestamp": "2026-10-24T10:50:51.503Z",
       "confidence": null
     },
     {
@@ -308,34 +299,25 @@
       "model": null,
       "action": "verdict",
       "detail": "{\"verdict\": \"accept\", \"reason\": \"Order total exceeds the 200.00 auto-approve limit.\", \"decision\": \"human_review\", \"revise_target\": null}",
-      "timestamp": "2026-10-24T08:49:28.531Z",
+      "timestamp": "2026-10-24T10:50:51.503Z",
       "confidence": 1.0
     },
     {
-      "step": "reporter",
-      "agent": "reporter",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-      "action": "write",
-      "detail": "Write customer reply and explanation (Request on 'nvidia/nemotron-3.5-lightning-30b-a3b' was aborted; retried on 'nvidia/nemotron-3.5-lightning-30b-a3b'.)",
-      "timestamp": "2026-10-24T08:50:58.605Z",
+      "step": "orchestrator",
+      "agent": "orchestrator",
+      "model": null,
+      "action": "model_error",
+      "detail": "Error code: 499 - {'error': {'message': 'The request was aborted before completion.', 'type': 'invalid_request_error', 'code': 'request_aborted', 'param': None, 'meterless_detail': 'Fetch is aborted'}, 'meterless': {'request_id': 'chatcmpl-e7wk8h3vmvma4vi3', 'requested_model': 'nvidia/nemotron-3.5-l",
+      "timestamp": "2026-10-24T10:53:07.047Z",
       "confidence": null
     },
     {
-      "step": "reporter",
-      "agent": "reporter",
+      "step": "orchestrator",
+      "agent": "orchestrator",
       "model": null,
-      "action": "fallback_text",
-      "detail": "Used template reply after invalid JSON",
-      "timestamp": "2026-10-24T08:50:58.606Z",
-      "confidence": null
-    },
-    {
-      "step": "reporter",
-      "agent": "reporter",
-      "model": null,
-      "action": "reply",
-      "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"lightning.metastore.refundwise.refundwise_usl.orders\", \"evidence_id\": \"E1\", \"detail\": \"lightning.metastore.refundwise.refundwise_usl.orders\"}, {\"step\": \"lightning.metastore.refundwise.refundwise_usl.refund_history\", \"evidence_id\": \"E2\", \"detail\": \"lightning.metastore.refundwise.refundwise_usl.refund_history\"}, {\"step\": \"lightning.metastore.refundwise.refundwise_usl.refund_policy\", \"evidence_id\": \"E3\", \"detail\": \"lightning.metastore.refundwise.refundwise_usl.refund_policy\"}]}",
-      "timestamp": "2026-10-24T08:50:58.606Z",
+      "action": "guard_fallback",
+      "detail": "R7: Order total exceeds the 200.00 auto-approve limit. -> human_review",
+      "timestamp": "2026-10-24T10:53:07.047Z",
       "confidence": null
     },
     {
@@ -343,12 +325,12 @@
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=human_review confidence=1.0 model_calls=6/12",
-      "timestamp": "2026-10-24T08:50:58.606Z",
+      "detail": "decision=human_review confidence=0.95 model_calls=4/12",
+      "timestamp": "2026-10-24T10:53:07.047Z",
       "confidence": null
     }
   ],
-  "model_calls": 6,
+  "model_calls": 4,
   "scout": {
     "intent": "refund.request",
     "score": 0.9502,
@@ -372,28 +354,12 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5PHGKM3HFGBQBP1GQMSK1DB",
+    "contractId": "01M5PREAW8Y5EY3HNNGTXQS9G6",
     "clarification": null,
-    "latencyMs": 6.609
+    "latencyMs": 10.8998
   },
-  "explanation": [
-    {
-      "step": "lightning.metastore.refundwise.refundwise_usl.orders",
-      "evidence_id": "E1",
-      "detail": "lightning.metastore.refundwise.refundwise_usl.orders"
-    },
-    {
-      "step": "lightning.metastore.refundwise.refundwise_usl.refund_history",
-      "evidence_id": "E2",
-      "detail": "lightning.metastore.refundwise.refundwise_usl.refund_history"
-    },
-    {
-      "step": "lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "evidence_id": "E3",
-      "detail": "lightning.metastore.refundwise.refundwise_usl.refund_policy"
-    }
-  ],
-  "trace_id": "trace-20261024-084751-2a8f5c",
+  "explanation": [],
+  "trace_id": "trace-20261024-104857-709fb4",
   "request_id": "S3",
-  "log_path": "logs/trace-20261024-084751-2a8f5c.jsonl"
+  "log_path": "logs/trace-20261024-104857-709fb4.jsonl"
 }
