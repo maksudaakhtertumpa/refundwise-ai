@@ -43,7 +43,7 @@ class EntryPoint(unittest.TestCase):
         self.assertIn("ORD-1042", status["result"]["customer_reply"])
         self.assertIn("R2", policy["result"]["rules_applied"])
         self.assertNotEqual(status["result"]["customer_reply"], policy["result"]["customer_reply"])
-        self.assertEqual(status["evidence"][0]["source"], "shop_orders.orders")
+        self.assertEqual(status["evidence"][0]["source"], "lightning.metastore.refundwise.refundwise_usl.orders")
 
     def test_bad_request_is_a_structured_error(self):
         with self.assertRaises(run.BadRequest):

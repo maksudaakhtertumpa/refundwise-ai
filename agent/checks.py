@@ -92,7 +92,7 @@ def _find_order_row(case: CaseFile) -> dict[str, Any]:
                 continue
             if "order_total" in row or "product_name" in row or "status" in row:
                 return row
-        if item.source == "shop_orders.orders":
+        if item.source == "lightning.metastore.refundwise.refundwise_usl.orders":
             rows = [
                 r for r in _rows_as_dicts(item)
                 if (not case.order_id or str(r.get("order_id") or "") == case.order_id)
@@ -108,7 +108,7 @@ def _find_history_rows(case: CaseFile) -> list[dict[str, Any]]:
     seen: set[str] = set()
     for item in case.evidence:
         looks_like_history = (
-            item.source == "support_desk.refund_history"
+            item.source == "lightning.metastore.refundwise.refundwise_usl.refund_history"
             or "refund_history" in (item.sql or "").lower()
             or "refund history" in (item.note or "").lower()
         )

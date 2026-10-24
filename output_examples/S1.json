@@ -8,8 +8,8 @@
   "evidence": [
     {
       "id": "E1",
-      "source": "shop_orders.orders",
-      "sql": "SELECT order_id, customer_id, order_date, delivery_date, product_name, category, unit_price, quantity, order_total, payment_method, status, final_sale FROM shop_orders.orders WHERE order_id = 'ORD-1042' AND customer_id = 'C003'",
+      "source": "lightning.metastore.refundwise.refundwise_usl.orders",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE order_id = 'ORD-1042' AND customer_id = 'C003'",
       "rows": [
         {
           "order_id": "ORD-1042",
@@ -26,12 +26,12 @@
           "final_sale": "false"
         }
       ],
-      "note": "shop_orders.orders"
+      "note": "lightning.metastore.refundwise.refundwise_usl.orders"
     },
     {
       "id": "E2",
-      "source": "support_desk.refund_history",
-      "sql": "SELECT refund_id, customer_id, order_id, request_date, amount, reason, decision FROM support_desk.refund_history WHERE customer_id = 'C003'",
+      "source": "lightning.metastore.refundwise.refundwise_usl.refund_history",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_history WHERE customer_id = 'C003'",
       "rows": [
         {
           "refund_id": "RF-2009",
@@ -43,12 +43,12 @@
           "decision": "approved"
         }
       ],
-      "note": "support_desk.refund_history"
+      "note": "lightning.metastore.refundwise.refundwise_usl.refund_history"
     },
     {
       "id": "E3",
-      "source": "policy_kb.refund_policy",
-      "sql": "SELECT rule_id, category, reason_type, window_days, auto_approve_limit, outcome, rule_text FROM policy_kb.refund_policy WHERE category = 'Shoes' OR category = 'ALL'",
+      "source": "lightning.metastore.refundwise.refundwise_usl.refund_policy",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy WHERE category = 'Shoes' OR category = 'ALL'",
       "rows": [
         {
           "rule_id": "R1",
@@ -82,7 +82,7 @@
           "category": "ALL",
           "reason_type": "any",
           "window_days": "0",
-          "auto_approve_limit": "0E-18",
+          "auto_approve_limit": "0.00",
           "outcome": "reject",
           "rule_text": "Items marked final sale cannot be refunded unless they are defective."
         },
@@ -100,7 +100,7 @@
           "category": "ALL",
           "reason_type": "any",
           "window_days": "90",
-          "auto_approve_limit": "0E-18",
+          "auto_approve_limit": "0.00",
           "outcome": "human_review",
           "rule_text": "Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse."
         },
@@ -109,7 +109,7 @@
           "category": "ALL",
           "reason_type": "any",
           "window_days": "0",
-          "auto_approve_limit": "0E-18",
+          "auto_approve_limit": "0.00",
           "outcome": "reject",
           "rule_text": "An order can be refunded only once. Requests for an order that was already refunded are rejected."
         },
@@ -118,12 +118,12 @@
           "category": "ALL",
           "reason_type": "any",
           "window_days": "0",
-          "auto_approve_limit": "0E-18",
+          "auto_approve_limit": "0.00",
           "outcome": "human_review",
           "rule_text": "When the customer's claim conflicts with order or carrier records, the case goes to human review."
         }
       ],
-      "note": "policy_kb.refund_policy"
+      "note": "lightning.metastore.refundwise.refundwise_usl.refund_policy"
     }
   ],
   "checks": {
@@ -148,15 +148,16 @@
       "R3"
     ],
     "confidence": 1.0,
-    "rationale": "Defective trail running shoes received within 30 days of delivery (15 days since delivery per E1), order total $89.00 under the $200.00 auto-approve limit (E1), not final sale (E1), and 0 approved refunds in the last 90 days (E2). Per policy R3, defective items within 30 days of delivery are approved for full refund.",
+    "rationale": "The trail running shoes are defective and were delivered 15 days ago, within R3's 30-day window. Order total is $89.00, under the $200.00 auto-approve limit, and the item is not final sale. E1 confirms delivery on 2026-10-10, order total $89.00, category Shoes, final_sale false. E2 shows no approved refunds in the last 90 days, so R8 does not apply.",
     "evidence_ids": [
-      "E1"
+      "E1",
+      "E2"
     ]
   },
   "critique": {
     "verdict": "accept",
     "missing_evidence": "",
-    "reason": "All factual claims match the Python checks and evidence: delivery 15 days ago (within R3's 30-day window), order total $89.00 under the $200.00 auto-approve limit, not final sale, order delivered and belongs to the customer, and 0 approved refunds in the last 90 days (the E2 refund is outside the window). Policy R3 approves defective items within 30 days of delivery. No checks conflict.",
+    "reason": "All factual claims are supported by evidence and agree with the Python checks: delivered 15 days ago within R3's 30-day defective window (E1, checks), $89.00 order total under the $200.00 auto-approve limit with over_auto_limit false (E1, checks), not final sale (E1, checks), order delivered and belongs to the customer (E1, checks), and 0 approved refunds in the last 90 days (checks; E2's only refund is for a different order, ORD-1005, dated 2025-12-02, outside the window), so R8 does not apply. No conflicts.",
     "issues": []
   },
   "decision": "approve",
@@ -164,9 +165,9 @@
   "rules_applied": [
     "R3"
   ],
-  "customer_reply": "Thank you for writing in. Your refund has been approved and will be returned to your original payment method within 5-7 business days.",
+  "customer_reply": "We're sorry to hear your Trail Running Shoes arrived with the sole coming off. We've approved a full refund for order ORD-1042, so please keep the shoes. A prepaid return label will be sent to you shortly.",
   "limitations": [
-    "The reply-writing model did not answer in time; the decision was already accepted by the critic, and the customer reply uses a standard template."
+    "Photo of the defect is not on file; approval relies on the customer's claim per policy within the 30-day window."
   ],
   "trace": [
     {
@@ -174,8 +175,9 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"refund.request\", \"score\": 0.9527, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5KW45DAGCYCE0QDF8P5R2F2\", \"latencyMs\": 7.6647}",
-      "timestamp": "2026-10-23T07:55:35.220Z"
+      "detail": "{\"intent\": \"refund.request\", \"score\": 0.9527, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PC5Z7V6KXB0ZE3W2YNR12C\", \"latencyMs\": 4.2585}",
+      "timestamp": "2026-10-24T07:14:40.511Z",
+      "confidence": null
     },
     {
       "step": "scout",
@@ -183,7 +185,8 @@
       "model": null,
       "action": "contract.verified",
       "detail": "agent.review: ok",
-      "timestamp": "2026-10-23T07:55:35.220Z"
+      "timestamp": "2026-10-24T07:14:40.511Z",
+      "confidence": null
     },
     {
       "step": "intake",
@@ -191,39 +194,8 @@
       "model": null,
       "action": "skipped",
       "detail": "Scout contract already bound order_id=ORD-1042 reason_type=defective",
-      "timestamp": "2026-10-23T07:55:35.220Z"
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-      "action": "tool_round",
-      "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-23T07:55:45.301Z"
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": null,
-      "action": "run_sql",
-      "detail": "E1 ok=True source=shop_orders.orders",
-      "timestamp": "2026-10-23T07:55:46.242Z"
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-      "action": "tool_round",
-      "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-23T07:55:47.626Z"
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": null,
-      "action": "run_sql",
-      "detail": "E2 ok=True source=support_desk.refund_history",
-      "timestamp": "2026-10-23T07:55:48.529Z"
+      "timestamp": "2026-10-24T07:14:40.511Z",
+      "confidence": null
     },
     {
       "step": "evidence",
@@ -231,15 +203,53 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-23T07:55:49.906Z"
+      "timestamp": "2026-10-24T07:14:51.560Z",
+      "confidence": null
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": null,
       "action": "run_sql",
-      "detail": "E3 ok=True source=policy_kb.refund_policy",
-      "timestamp": "2026-10-23T07:55:50.647Z"
+      "detail": "E1 ok=True source=lightning.metastore.refundwise.refundwise_usl.orders",
+      "timestamp": "2026-10-24T07:14:52.528Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-24T07:14:53.801Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E2 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_history",
+      "timestamp": "2026-10-24T07:14:54.201Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-24T07:14:55.042Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E3 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_policy",
+      "timestamp": "2026-10-24T07:14:55.412Z",
+      "confidence": null
     },
     {
       "step": "checks",
@@ -247,15 +257,26 @@
       "model": null,
       "action": "compute",
       "detail": "{'days_since_delivery': 15, 'days_since_order': 18, 'delivered': True, 'order_total': 89.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Shoes', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-10-10', 'order_date': '2026-10-07', 'order_found': True, 'order_belongs_to_customer': True}",
-      "timestamp": "2026-10-23T07:55:50.647Z"
+      "timestamp": "2026-10-24T07:14:55.412Z",
+      "confidence": null
     },
     {
       "step": "decide",
       "agent": "decide",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "propose",
       "detail": "Propose decision from checks and policy",
-      "timestamp": "2026-10-23T07:56:35.685Z"
+      "timestamp": "2026-10-24T07:15:44.698Z",
+      "confidence": null
+    },
+    {
+      "step": "decide",
+      "agent": "decide",
+      "model": null,
+      "action": "proposal",
+      "detail": "approve rules=['R3'] evidence=['E1', 'E2']",
+      "timestamp": "2026-10-24T07:15:44.698Z",
+      "confidence": 1.0
     },
     {
       "step": "critic",
@@ -263,42 +284,65 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "review",
       "detail": "Check proposal against evidence and checks",
-      "timestamp": "2026-10-23T07:57:11.050Z"
+      "timestamp": "2026-10-24T07:16:28.129Z",
+      "confidence": null
+    },
+    {
+      "step": "critic",
+      "agent": "policy-verifier",
+      "model": null,
+      "action": "verify_claims",
+      "detail": "All cited evidence, rules, numbers and windows match the checks.",
+      "timestamp": "2026-10-24T07:16:28.129Z",
+      "confidence": null
     },
     {
       "step": "critic",
       "agent": "critic",
       "model": null,
       "action": "verdict",
-      "detail": "{\"verdict\": \"accept\", \"reason\": \"All factual claims match the Python checks and evidence: delivery 15 days ago (within R3's 30-day window), order total $89.00 under the $200.00 auto-approve limit, not final sale, order delivered and belongs to the customer, and 0 approved refunds in the last 90 days (the E2 refund is outside the window). Policy R3 approves defective items within 30 days of delivery. No checks conflict.\", \"decision\": \"approve\"}",
-      "timestamp": "2026-10-23T07:57:11.050Z"
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"All factual claims are supported by evidence and agree with the Python checks: delivered 15 days ago within R3's 30-day defective window (E1, checks), $89.00 order total under the $200.00 auto-approve limit with over_auto_limit false (E1, checks), not final sale (E1, checks), order delivered and belongs to the customer (E1, checks), and 0 approved refunds in the last 90 days (checks; E2's only refund is for a different order, ORD-1005, dated 2025-12-02, outside the window), so R8 does not apply. No conflicts.\", \"decision\": \"approve\", \"revise_target\": null}",
+      "timestamp": "2026-10-24T07:16:28.129Z",
+      "confidence": 1.0
     },
     {
-      "step": "orchestrator",
-      "agent": "orchestrator",
-      "model": null,
-      "action": "model_error",
-      "detail": "Request timed out.",
-      "timestamp": "2026-10-23T08:01:02.801Z"
+      "step": "reporter",
+      "agent": "reporter",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "write",
+      "detail": "Write customer reply and explanation",
+      "timestamp": "2026-10-24T07:17:25.637Z",
+      "confidence": null
     },
     {
-      "step": "orchestrator",
-      "agent": "orchestrator",
+      "step": "reporter",
+      "agent": "final-reviewer",
       "model": null,
-      "action": "reporter_fallback",
-      "detail": "kept critic-accepted decision approve",
-      "timestamp": "2026-10-23T08:01:02.801Z"
+      "action": "review",
+      "detail": "Every explanation step cites real evidence and the reply matches the decision.",
+      "timestamp": "2026-10-24T07:17:25.637Z",
+      "confidence": null
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": null,
+      "action": "reply",
+      "detail": "{\"decision\": \"approve\", \"steps\": [{\"step\": \"Verified delivery date and return window\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1042 was delivered on 2026-10-10; 15 days have passed, well within the 30-day defective-item window.\"}, {\"step\": \"Confirmed order total under auto-approve limit\", \"evidence_id\": \"E1\", \"detail\": \"Order total is $89.00, below the $200.00 auto-approve threshold.\"}, {\"step\": \"Verified item is not final sale\", \"evidence_id\": \"E1\", \"detail\": \"The final_sale flag is false, making the item eligible for a refund.\"}, {\"step\": \"Checked refund history for recent requests\", \"evidence_id\": \"E2\", \"detail\": \"Refund history shows 0 approved refunds in the last 90 days for customer C003 on this order, so no abuse flags apply.\"}, {\"step\": \"Applied defective item policy\", \"evidence_id\": \"E3\", \"detail\": \"Policy R3 approves defective items within 30 days of delivery with an auto-approve limit of $200.00; a photo is requested but not required for approval within the window.\"}]}",
+      "timestamp": "2026-10-24T07:17:25.637Z",
+      "confidence": null
     },
     {
       "step": "orchestrator",
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=approve confidence=1.0 model_calls=5/12",
-      "timestamp": "2026-10-23T08:01:02.801Z"
+      "detail": "decision=approve confidence=1.0 model_calls=6/12",
+      "timestamp": "2026-10-24T07:17:25.637Z",
+      "confidence": null
     }
   ],
-  "model_calls": 5,
+  "model_calls": 6,
   "scout": {
     "intent": "refund.request",
     "score": 0.9527,
@@ -322,12 +366,38 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5KW45DAGCYCE0QDF8P5R2F2",
+    "contractId": "01M5PC5Z7V6KXB0ZE3W2YNR12C",
     "clarification": null,
-    "latencyMs": 7.6647
+    "latencyMs": 4.2585
   },
-  "explanation": [],
-  "trace_id": "trace-20261023-075534-782386",
+  "explanation": [
+    {
+      "step": "Verified delivery date and return window",
+      "evidence_id": "E1",
+      "detail": "Order ORD-1042 was delivered on 2026-10-10; 15 days have passed, well within the 30-day defective-item window."
+    },
+    {
+      "step": "Confirmed order total under auto-approve limit",
+      "evidence_id": "E1",
+      "detail": "Order total is $89.00, below the $200.00 auto-approve threshold."
+    },
+    {
+      "step": "Verified item is not final sale",
+      "evidence_id": "E1",
+      "detail": "The final_sale flag is false, making the item eligible for a refund."
+    },
+    {
+      "step": "Checked refund history for recent requests",
+      "evidence_id": "E2",
+      "detail": "Refund history shows 0 approved refunds in the last 90 days for customer C003 on this order, so no abuse flags apply."
+    },
+    {
+      "step": "Applied defective item policy",
+      "evidence_id": "E3",
+      "detail": "Policy R3 approves defective items within 30 days of delivery with an auto-approve limit of $200.00; a photo is requested but not required for approval within the window."
+    }
+  ],
+  "trace_id": "trace-20261024-071440-78b749",
   "request_id": "S1",
-  "log_path": "logs/trace-20261023-075534-782386.jsonl"
+  "log_path": "logs/trace-20261024-071440-78b749.jsonl"
 }

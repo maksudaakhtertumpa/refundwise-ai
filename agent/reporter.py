@@ -7,6 +7,7 @@ import json
 from agent.parse import extract_json_object, message_text
 from agent.runtime import tracked_chat
 from agent.state import CaseFile
+from agent.verifier import review_report
 
 _SYSTEM = """You write the customer-facing outcome for RefundWise.
 Be short and polite. Do not mention internal rule ids in the customer_reply;
@@ -26,6 +27,27 @@ Every explanation step should include an evidence id when one exists.
 def write_report(case: CaseFile) -> None:
     """Fill customer_reply and limitations from the fast model, with a fallback."""
     payload = _ask(case)
+    if payload is not None:
+        issues = review_report(case, payload)
+        case.add_trace(
+            step="reporter",
+            agent="final-reviewer",
+            action="review",
+            detail="; ".join(issues) if issues else "Every explanation step cites real evidence and the reply matches the decision.",
+        )
+        if issues:
+            revised = _ask(case, feedback=issues)
+            still = review_report(case, revised) if revised else issues
+            case.add_trace(
+                step="reporter",
+                agent="final-reviewer",
+                action="re-review",
+                detail="; ".join(still) if still else "Revised reply passes review.",
+            )
+            if revised and not still:
+                payload = revised
+            else:
+                payload = _repair(case, revised or payload, still)
     if payload is None:
         payload = _fallback_report(case)
         case.add_trace(
@@ -53,8 +75,23 @@ def write_report(case: CaseFile) -> None:
     )
 
 
-def _ask(case: CaseFile) -> dict | None:
-    """Ask the fast model for the customer reply JSON."""
+def _repair(case: CaseFile, payload: dict, issues: list[str]) -> dict:
+    """Keep only steps that cite real evidence; use the template reply if it contradicts the decision."""
+    ids = {item.id for item in case.evidence}
+    steps = [s for s in payload.get("explanation") or [] if isinstance(s, dict) and s.get("evidence_id") in ids]
+    reply = payload.get("customer_reply")
+    if any("reply tells the customer" in i for i in issues):
+        reply = _fallback_report(case)["customer_reply"]
+    case.add_trace(step="reporter", agent="final-reviewer", action="repair",
+                   detail=f"kept {len(steps)} cited steps; template reply={reply != payload.get('customer_reply')}")
+    return {**payload, "customer_reply": reply, "explanation": steps or _fallback_report(case)["explanation"]}
+
+
+def _ask(case: CaseFile, feedback: list[str] | None = None) -> dict | None:
+    """Ask the fast model for the customer reply JSON (with reviewer feedback on a retry)."""
+    content = _user_payload(case)
+    if feedback:
+        content += "\n\nThe final reviewer rejected your previous answer. Fix these issues: " + json.dumps(feedback)
     result = tracked_chat(
         case,
         agent="reporter",
@@ -62,10 +99,10 @@ def _ask(case: CaseFile) -> dict | None:
         action="write",
         messages=[
             {"role": "system", "content": _SYSTEM},
-            {"role": "user", "content": _user_payload(case)},
+            {"role": "user", "content": content},
         ],
         lane="fast",
-        detail="Write customer reply and explanation",
+        detail="Revise reply after review" if feedback else "Write customer reply and explanation",
     )
     return validate_report(extract_json_object(message_text(result.get("message"))))
 

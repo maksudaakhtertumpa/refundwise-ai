@@ -12,16 +12,18 @@ from agent.tools_zetaris import run_sql
 
 MAX_TOOL_CALLS = 5
 
-SCHEMA = """Zetaris tables (always query as source.table). All values come back as strings.
+SCHEMA = """Zetaris Unified Semantic Layer refundwise_usl: one typed model with primary and foreign
+keys over three separate systems (orders from the order system, refund_history from the support desk,
+refund_policy from the policy knowledge base). Always use the full table names below. Values come back as strings.
 
-shop_orders.orders(
+lightning.metastore.refundwise.refundwise_usl.orders(
   order_id, customer_id, order_date, delivery_date, product_name, category,
   unit_price, quantity, order_total, payment_method, status, final_sale
 )
-support_desk.refund_history(
+lightning.metastore.refundwise.refundwise_usl.refund_history(
   refund_id, customer_id, order_id, request_date, amount, reason, decision
 )
-policy_kb.refund_policy(
+lightning.metastore.refundwise.refundwise_usl.refund_policy(
   rule_id, category, reason_type, window_days, auto_approve_limit, outcome, rule_text
 )
 
@@ -31,7 +33,7 @@ You must collect:
 (c) refund_policy rows for the order's category AND category = 'ALL'
 
 Read-only SELECT/WITH only, one statement per call. Use literal quoted strings (no bind parameters).
-Every query on shop_orders.orders or support_desk.refund_history MUST filter on this
+Every query on lightning.metastore.refundwise.refundwise_usl.orders or lightning.metastore.refundwise.refundwise_usl.refund_history MUST filter on this
 customer's customer_id; other queries are refused.
 Call run_sql for each query. After you have a, b and c, stop calling tools and reply DONE.
 """
@@ -185,19 +187,19 @@ def _fallback_queries(case: CaseFile, category: str | None) -> list[tuple[str, s
     oid = _sql_literal(case.order_id or "")
     queries = [
         (
-            "shop_orders.orders",
+            "lightning.metastore.refundwise.refundwise_usl.orders",
             (
                 "SELECT order_id, customer_id, order_date, delivery_date, product_name, "
                 "category, unit_price, quantity, order_total, payment_method, status, final_sale "
-                f"FROM shop_orders.orders WHERE order_id = {oid} AND customer_id = {cid}"
+                f"FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE order_id = {oid} AND customer_id = {cid}"
             ),
             "order row",
         ),
         (
-            "support_desk.refund_history",
+            "lightning.metastore.refundwise.refundwise_usl.refund_history",
             (
                 "SELECT refund_id, customer_id, order_id, request_date, amount, reason, decision "
-                f"FROM support_desk.refund_history WHERE customer_id = {cid}"
+                f"FROM lightning.metastore.refundwise.refundwise_usl.refund_history WHERE customer_id = {cid}"
             ),
             "customer refund history",
         ),
@@ -206,18 +208,18 @@ def _fallback_queries(case: CaseFile, category: str | None) -> list[tuple[str, s
         cat = _sql_literal(category)
         policy_sql = (
             "SELECT rule_id, category, reason_type, window_days, auto_approve_limit, outcome, rule_text "
-            f"FROM policy_kb.refund_policy WHERE category IN ({cat}, 'ALL')"
+            f"FROM lightning.metastore.refundwise.refundwise_usl.refund_policy WHERE category IN ({cat}, 'ALL')"
         )
     else:
         policy_sql = (
             "SELECT rule_id, category, reason_type, window_days, auto_approve_limit, outcome, rule_text "
-            "FROM policy_kb.refund_policy"
+            "FROM lightning.metastore.refundwise.refundwise_usl.refund_policy"
         )
-    queries.append(("policy_kb.refund_policy", policy_sql, "policy rules"))
+    queries.append(("lightning.metastore.refundwise.refundwise_usl.refund_policy", policy_sql, "policy rules"))
     return queries
 
 
-_CUSTOMER_SCOPED = ("shop_orders.orders", "support_desk.refund_history")
+_CUSTOMER_SCOPED = ("lightning.metastore.refundwise.refundwise_usl.orders", "lightning.metastore.refundwise.refundwise_usl.refund_history")
 
 
 def scope_error_for(sql: str, customer_id: str) -> str | None:
@@ -227,7 +229,7 @@ def scope_error_for(sql: str, customer_id: str) -> str | None:
     table (names, emails) is not needed for a refund decision and is not exposed.
     """
     lower = (sql or "").lower()
-    if "support_desk.customers" in lower:
+    if "lightning.metastore.refundwise.refundwise_usl.customers" in lower:
         return "Query refused: the customers table is not needed for refund evidence"
     if any(t in lower for t in _CUSTOMER_SCOPED):
         if "customer_id" not in lower or f"'{customer_id.lower()}'" not in lower:
@@ -244,10 +246,10 @@ def infer_source(sql: str) -> str:
     """Guess which table a query reads."""
     lower = (sql or "").lower()
     for name in (
-        "shop_orders.orders",
-        "support_desk.refund_history",
-        "support_desk.customers",
-        "policy_kb.refund_policy",
+        "lightning.metastore.refundwise.refundwise_usl.orders",
+        "lightning.metastore.refundwise.refundwise_usl.refund_history",
+        "lightning.metastore.refundwise.refundwise_usl.customers",
+        "lightning.metastore.refundwise.refundwise_usl.refund_policy",
     ):
         if name in lower:
             return name
@@ -264,11 +266,11 @@ def _note_for(payload: dict[str, Any], source: str) -> str:
 def _missing_buckets(case: CaseFile) -> list[str]:
     """Return which of order/history/policy evidence is still missing."""
     missing: list[str] = []
-    if not _has_source(case, "shop_orders.orders"):
+    if not _has_source(case, "lightning.metastore.refundwise.refundwise_usl.orders"):
         missing.append("order")
-    if not _has_source(case, "support_desk.refund_history"):
+    if not _has_source(case, "lightning.metastore.refundwise.refundwise_usl.refund_history"):
         missing.append("history")
-    if not _has_source(case, "policy_kb.refund_policy"):
+    if not _has_source(case, "lightning.metastore.refundwise.refundwise_usl.refund_policy"):
         missing.append("policy")
     return missing
 
@@ -280,7 +282,7 @@ def _has_source(case: CaseFile, source: str) -> bool:
             return True
         if item.source == source and "failed" not in (item.note or "").lower():
             # Empty history is a valid result.
-            if source == "support_desk.refund_history":
+            if source == "lightning.metastore.refundwise.refundwise_usl.refund_history":
                 return True
     return False
 
@@ -288,7 +290,7 @@ def _has_source(case: CaseFile, source: str) -> bool:
 def _category_from_evidence(case: CaseFile) -> str | None:
     """Read category from an order evidence row if we already have one."""
     for item in case.evidence:
-        if item.source != "shop_orders.orders":
+        if item.source != "lightning.metastore.refundwise.refundwise_usl.orders":
             continue
         for row in item.rows or []:
             if isinstance(row, dict) and row.get("category"):

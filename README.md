@@ -25,6 +25,10 @@ All 12 demo scenarios (`input_examples/requests.json`) produce the expected outc
 
 ---
 
+## Demo video
+
+Demo video: _link added after upload_
+
 ## Architecture
 
 ```mermaid
@@ -39,7 +43,7 @@ flowchart LR
     C --> V{Executor verifies<br/>signature · expiry · scope · approvals}
     G -- blocked --> X([Refused<br/>no model, no data])
     I -- unclear --> Q([Clarifying question])
-    V -- order.status / policy.question --> D[(Zetaris)]
+    V -- order.status / policy.question --> D
     V -- order.cancel / account.update --> H([Human review])
     V -- refund.request / order.not-received --> P
 
@@ -48,26 +52,35 @@ flowchart LR
         IN[Intake<br/>skipped if Scout bound params] --> EV[Evidence agent<br/>tool-calling run_sql]
         EV --> CK[Deterministic checks<br/>Python, authoritative]
         CK --> DE[Decide<br/>Nemotron Super]
-        DE --> CR[Critic + hard guards R7–R10<br/>Nemotron Super]
-        CR -- revise, max 2 --> DE
-        CR --> RE[Reporter<br/>reply + cited explanation]
+        DE --> CR[Critic<br/>Nemotron Super]
+        CR --> PV[Policy verifier + hard guards R7–R10<br/>Python]
+        PV -- "claim does not match the checks: revise (max 2)" --> DE
+        CR -- "evidence missing: revise" --> EV
+        PV --> RE[Reporter<br/>reply + cited explanation]
+        RE --> FR[Final reviewer<br/>Python]
+        FR -- "bad citation or reply contradicts decision: rewrite once" --> RE
     end
 
     EV <-->|read-only, customer-scoped SQL| D
-    D --- DB1[(shop_orders)]
-    D --- DB2[(support_desk)]
-    D --- DB3[(policy_kb)]
+    subgraph ZT["Zetaris"]
+        D[(Unified Semantic Layer<br/>refundwise_usl: keys, FKs, no PII)] --- M[(Virtual data mart<br/>refundwise_mart)]
+        D --- DB1[(shop_orders)]
+        D --- DB2[(support_desk)]
+        D --- DB3[(policy_kb)]
+    end
     P -.->|OpenAI-compatible calls| N[Meterless Nightshift<br/>NVIDIA Nemotron lanes]
     RE --> OUT([Decision · confidence · rules · reply<br/>evidence trail · agent timeline])
 ```
+
+The same diagram as an image: [`docs/architecture.png`](docs/architecture.png).
 
 **How a refund is decided**
 
 1. **Scout Intent** (`scout/`) classifies the message, binds `order_id` and `reason_type`, runs five guard layers and signs a contract that lists the allowed capabilities. `agent/scout_gate.py` recomputes the HMAC and checks expiry, scope and required approvals.
 2. **Evidence agent** (`agent/evidence.py`) has the model call a `run_sql` tool against Zetaris. Every query is checked twice before it runs. `tools_zetaris.py` allows single read-only statements on four allow-listed tables only. `scope_error_for` refuses anything not filtered to the current customer, and the customers table (PII) is never available to the model. Refused queries appear in the trace.
 3. **Checks** (`agent/checks.py`) compute the facts in plain Python: days since delivery, order ownership, prior approved refunds in 90 days, final sale, already refunded, over the limit. The model is told these are authoritative.
-4. **Decide** proposes approve / reject / human_review with rules and evidence ids. The **critic** reviews the proposal. Hard guards in code (`agent/critic.py`) override the model for R7–R10, so a persuasive model cannot approve a $1,249 laptop or a refund on an order owned by someone else.
-5. **Reporter** writes the customer reply and a "why" list. Each line cites evidence ids (E1, E2…) that the UI expands into the exact SQL and rows.
+4. **Decide** proposes approve / reject / human_review with rules and evidence ids. The **critic** model reviews it, then the **policy verifier** (`agent/verifier.py`) checks the same proposal in Python: cited evidence must exist, cited rules must fit the order's category and reason (Electronics change of mind is R2, not R1), numbers must match the checks, and approvals must respect the policy windows. Any mismatch sends the proposal back to decide with the exact issues (at most 2 rounds, then human review). Hard guards (`agent/critic.py`) override the model for R7–R10, so a persuasive model cannot approve a $1,249 laptop or a refund on an order owned by someone else.
+5. **Reporter** writes the customer reply and a "why" list. Each line cites an evidence id (E1, E2…) that the UI expands into the exact SQL and rows. The **final reviewer** rejects a reply whose steps cite no real evidence id or that tells the customer "approved" when the decision is not, and the reporter rewrites it once.
 
 There is a budget of at most 12 model calls per case; a typical refund uses 6, and non-refund routes use 0. If Nightshift is slow or a call is aborted, the pipeline retries on the fast lane and then falls back to the deterministic guard decision or human review. It never auto-approves on failure.
 
@@ -77,10 +90,11 @@ There is a budget of at most 12 model calls per case; a typical refund uses 6, a
 
 | Technology | How RefundWise uses it | Where |
 |---|---|---|
-| **Zetaris** | A single SQL layer over three separate Postgres databases (orders, support desk, policy KB). The agent queries them as `shop_orders.orders`, `support_desk.refund_history` and `policy_kb.refund_policy` through the Zetaris REST SQL API, with no ETL and no direct DB access. | `agent/tools_zetaris.py`, `data/zetaris_register.sql` |
+| **Zetaris** | The data layer. Three separate Postgres databases (orders, support desk, policy KB) are registered in Zetaris, curated in a virtual data mart, and modelled as a **Unified Semantic Layer** (`refundwise_usl`) with primary keys, a customer foreign key, clean types and no email column. Every agent query goes to the semantic layer through the Zetaris REST SQL API: no ETL, no direct database access. See [Zetaris semantic layer](#zetaris-semantic-layer-and-reflection). | `agent/tools_zetaris.py`, `data/zetaris_register.sql`, `data/zetaris_semantic_layer.sql` |
 | **Meterless Scout Intent** (engine) | Implemented from the official spec. It is the gate in front of every action: intent routing, parameter binding, injection blocking, clarification and signed execution contracts. It passes the **official Meterless eval harness** plus our own 35-example regression set. | `scout/`, `agent/router.py`, `agent/scout_gate.py`, [scout/README.md](scout/README.md) |
 | **Meterless Nightshift** | Local OpenAI-compatible runtime (`127.0.0.1:8088/v1`) that routes each call to an NVIDIA lane and records which model answered. | `agent/llm.py` |
-| **NVIDIA Nemotron** | `nemotron-3.5-lightning-30b-a3b` (fast lane) for intake and evidence tool-calling. `nemotron-3.5-super-vl-120b-a12b` (deep lane) for decide and critic. The UI timeline shows the model behind every step. | `agent/llm.py`, `app.py` |
+| **NVIDIA Nemotron** | `nemotron-3.5-lightning-30b-a3b` (fast lane) for intake, evidence tool-calling and the reply. `nemotron-3.5-super-vl-120b-a12b` (deep lane) for decide and critic. Every log line records the model that answered. | `agent/llm.py`, `app.py`, `logs/` |
+| **Cursor** | Used to scaffold the first agent pipeline (intake, evidence, checks, decide, critic, reporter). Later work used Claude and GitHub Copilot; see [How we built it](#how-we-built-it). | — |
 
 **Scout Intent results** (`bash scripts/run_scout_evals.sh`)
 
@@ -92,6 +106,26 @@ There is a budget of at most 12 model calls per case; a typical refund uses 6, a
 | Stage-1 latency self-test | about 1 ms (budget 16 ms) |
 
 ---
+
+## Zetaris semantic layer and reflection
+
+**Three layers, built in the Zetaris UI and recorded in [`data/zetaris_semantic_layer.sql`](data/zetaris_semantic_layer.sql):**
+
+| Layer | What it is | Why RefundWise needs it |
+|---|---|---|
+| 1. Sources | `shop_orders`, `support_desk`, `policy_kb`: three Postgres databases registered with `CREATE DATASOURCE` | The facts of a refund live in three systems that do not talk to each other |
+| 2. Virtual data mart | `refundwise_mart`: the four tables on one canvas (Data Product → Virtual Data Mart) | One curated place for support leads to browse and query the data |
+| 3. Unified Semantic Layer | `lightning.metastore.refundwise.refundwise_usl`: `customers`, `orders`, `refund_history`, `refund_policy` with primary keys, `orders.customer_id` and `refund_history.customer_id` → `customers`, typed dates and decimals, **email left out** | The agents query only this layer. If it is missing, `run_sql` falls back to the source tables and records it in the trace |
+
+**Reflection.**
+- *How it helped.* The evidence agent learns one schema instead of three connections, and a single SQL statement joins orders, refund history and customers across systems. The semantic layer also did data cleaning we would otherwise have coded: amounts came back as `59.900000000000000000` from the source tables and `59.90` from the USL, and the PII column is gone before any agent can ask for it.
+- *How it could help in a real support team.* A new source, such as courier tracking for "not received" claims, can be added to the semantic layer without changing the agents' prompts or code. The keys and foreign keys can become data-quality rules that flag a refund whose order or customer does not exist.
+- *Recommendations for Zetaris* (things we actually ran into):
+  1. The SQL editor runs one statement per execution, so a setup script has to be pasted statement by statement.
+  2. The REST API returns every value as a string, including dates and decimals.
+  3. `ACTIVATE USL TABLE … AS SELECT … FROM refundwise_mart.customers` (activating from a data mart) returned only "bad request". Activating from the source tables worked. A clearer error, or support for marts as an activation source, would help.
+  4. The data mart description rejects `:` with a validation message, and the description we had set was gone after adding tables to the canvas.
+  5. API tokens live under Management → API Tokens; a link from the REST/SQL docs would save time.
 
 ## Setup
 
@@ -110,7 +144,7 @@ cp .env.example .env        # then fill in your own values; never commit .env
 `SAMPLE_MODE=true` replaces Zetaris with a SQLite copy of the CSV snapshot in `data/`. It loads sample **input data only**, never saved answers. Without Nightshift, Scout routing, order status, policy questions and injection blocking still work fully. Refund cases still collect evidence and run the Python checks, then fall back to the deterministic policy guards (R7–R10) or human review. They never auto-approve without the model.
 
 ```bash
-SAMPLE_MODE=true .venv/bin/python -m unittest discover tests -v   # 15 tests, no services needed
+SAMPLE_MODE=true .venv/bin/python -m unittest discover tests -v   # 23 tests, no services needed
 SAMPLE_MODE=true .venv/bin/python run.py --input input_examples/example_3.json
 SAMPLE_MODE=true .venv/bin/streamlit run app.py --server.address localhost
 ```
@@ -119,8 +153,9 @@ SAMPLE_MODE=true .venv/bin/streamlit run app.py --server.address localhost
 
 1. **Zetaris.** Start the local platform (`cd ~/zetaris/zetaris-platform && docker compose up -d`), then open http://localhost:3000 and create an API token under Management → API Tokens.
 2. **Load the data.** `bash scripts/load_data.sh` creates the three Postgres databases and a read-only role. Then run each statement in `data/zetaris_register.sql` in the Zetaris SQL editor, one at a time.
-3. **Nightshift.** Start Meterless Nightshift, add your NVIDIA key under Setup → Providers, and make sure the Race lane has Nemotron Lightning and the Judge lane has Nemotron Super.
-4. **Check the connections.**
+3. **Build the semantic layer.** Follow `data/zetaris_semantic_layer.sql`: create the `refundwise_mart` data mart and the `refundwise_usl` Unified Semantic Layer, then run the four `ACTIVATE USL TABLE` statements. (Optional: without it the agents read the source tables and say so in the trace.)
+4. **Nightshift.** Start Meterless Nightshift, add your NVIDIA key under Setup → Providers, and make sure the Race lane has Nemotron Lightning and the Judge lane has Nemotron Super.
+5. **Check the connections.**
    ```bash
    .venv/bin/python scripts/test_zetaris.py
    .venv/bin/python scripts/test_llm.py
@@ -224,7 +259,8 @@ Inside the container, `localhost` is the container itself. To reach Zetaris and 
 **Tests**
 
 ```bash
-.venv/bin/python -m unittest discover tests -v   # 15 tests: SQL safety, scope, guards, contracts, entry point, logs, no secrets, no output_examples at runtime
+.venv/bin/python -m unittest discover tests -v   # 23 tests: SQL safety, scope, semantic-layer names, guards, contracts, entry point, logs, critic loop, final reviewer, no secrets, no output_examples at runtime
+.venv/bin/python scripts/run_demo.py input_examples/edge_cases.json   # 4 boundary cases (windows, category rules, final sale)
 bash scripts/run_scout_evals.sh                  # Scout Intent: official harness + regression + feature tests
 ```
 
@@ -268,21 +304,39 @@ All data is synthetic, generated by `scripts/gen_data.py` with a fixed seed: 48 
 - Scout runs Stage 1 (lexical) only. New phrasings it is unsure about become a clarifying question rather than a wrong action, which is the spec's intended safe behaviour. See [scout/README.md](scout/README.md).
 - The contract HMAC protects integrity between Scout and the executor. It does not replace user authentication; in this demo the customer id is selected in the UI.
 - The policy has 10 rules and the dataset is small. This is a working prototype, not a production system.
+- The Zetaris data mart and semantic layer are built once by hand in the Zetaris UI (steps in `data/zetaris_semantic_layer.sql`). A fresh install without them still runs, on the source tables.
 
 ## Agent roles
 
-| Agent | Role (planner / executor / evaluator) | Model |
-|---|---|---|
-| Scout Intent | Planner: decides what is being asked, binds the order and reason, plans the tools, signs the contract | none (deterministic engine) |
-| Intake | Planner: extracts the order and reason when Scout could not bind them | Lightning (fast lane) |
-| Evidence | Executor: tool-calling agent that writes customer-scoped SQL for Zetaris | Lightning (fast lane) |
-| Checks | Executor: computes the policy facts in Python | none |
-| Decide | Executor: proposes a decision with rules and evidence ids | Super (deep lane) |
-| Critic | Evaluator: checks every claim against the evidence and checks; can send the case back for more evidence | Super (deep lane) |
-| Hard guards | Evaluator: code rules R7–R10 that override the model | none |
-| Reporter | Writes the customer reply and the cited "why" | Lightning (fast lane) |
+| Agent | Role (planner / executor / evaluator) | Model | Can block or send back? |
+|---|---|---|---|
+| Scout Intent | Planner: decides what is being asked, binds the order and reason, plans the tools, signs the contract | none (deterministic engine) | Yes: refuses, asks to clarify, or requires approval |
+| Intake | Planner: extracts the order and reason when Scout could not bind them | Lightning | No |
+| Evidence | Executor: tool-calling agent that writes customer-scoped SQL for the Zetaris semantic layer | Lightning | Retries; refused SQL is logged |
+| Checks | Executor: computes the policy facts in Python | none | No |
+| Decide | Executor: proposes a decision with rules and evidence ids; revises it from the critic's issues | Super | No |
+| Critic | Evaluator: checks every claim against the evidence and checks | Super | Yes: sends back for more evidence |
+| Policy verifier | Evaluator: checks cited evidence, rule fit, numbers and windows in Python | none | Yes: sends the proposal back to decide |
+| Hard guards | Evaluator: code rules R7–R10 that override the model | none | Yes: forces reject or human review |
+| Reporter | Writes the customer reply and the cited "why" | Lightning | No |
+| Final reviewer | Evaluator: every "why" line must cite a real evidence id; the reply must not contradict the decision | none | Yes: sends the reply back once |
 
-The feedback loop: if the critic says *revise*, the orchestrator sends its request back to the evidence agent, the checks run again, and decide proposes again (at most 2 rounds, then human review).
+**The loops.** Critic → evidence (missing data). Policy verifier → decide (wrong rule, number or window; at most 2 rounds, then human review). Final reviewer → reporter (bad citation or contradictory reply; one rewrite, then the bad lines are dropped). Every hand-off appears in `logs/` with `agent_name`, `target_agent`, `status` (`needs_revision`, `issues_found` …), `confidence` and `retry_count`.
+
+**A real one from a live run** (`logs/`, case E1, Nemotron): the reporter cited `'E2,E3'` in one "why" line; the final reviewer flagged it (`issues_found`) because each line must link to one evidence row; the reporter rewrote it and the re-review passed. `tests/test_collaboration.py` also forces a wrong proposal (approve with R1 for Electronics) to show the verifier sending it back and the corrected proposal being accepted.
+
+## Failure handling
+
+| Failure | Behaviour |
+|---|---|
+| Semantic layer missing or failing | `run_sql` retries the same query on the source tables and adds a note to the evidence |
+| Zetaris down | Evidence is empty, checks find no order, guard R10 sends the case to human review with the query error recorded |
+| Model slow or aborted | Retry on the fast lane; whole case capped at `CASE_TIME_BUDGET` (300 s); then the critic-accepted decision, a policy guard, or human review. Never an auto-approve |
+| More than 12 model calls | Stop and send to human review |
+| Model proposes a claim the data does not support | Policy verifier sends it back with the exact issue |
+| Prompt injection | Scout blocks it before any model call or query |
+| SQL that writes, touches other tables, other customers or PII | Refused before it reaches Zetaris and logged as `refused_sql` |
+| Malformed request to `run.py` / `POST /run` | `400` with a validation message |
 
 ## Pre-existing components
 

@@ -8,8 +8,8 @@
   "evidence": [
     {
       "id": "E1",
-      "source": "policy_kb.refund_policy",
-      "sql": "SELECT rule_id, category, reason_type, rule_text FROM policy_kb.refund_policy ORDER BY rule_id",
+      "source": "lightning.metastore.refundwise.refundwise_usl.refund_policy",
+      "sql": "SELECT rule_id, category, reason_type, rule_text FROM lightning.metastore.refundwise.refundwise_usl.refund_policy ORDER BY rule_id",
       "rows": [
         {
           "rule_id": "R1",
@@ -93,8 +93,9 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"policy.question\", \"score\": 0.5705, \"band\": \"medium\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5KXV0R7JBKYYJGV7QJBSFB1\", \"latencyMs\": 3.2576}",
-      "timestamp": "2026-10-23T08:25:32.683Z"
+      "detail": "{\"intent\": \"policy.question\", \"score\": 0.5705, \"band\": \"medium\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5PDHAT40T35FZW9GWFMRN4S\", \"latencyMs\": 4.1125}",
+      "timestamp": "2026-10-24T07:38:21.385Z",
+      "confidence": null
     },
     {
       "step": "scout",
@@ -102,7 +103,8 @@
       "model": null,
       "action": "contract.verified",
       "detail": "policy.lookup: ok",
-      "timestamp": "2026-10-23T08:25:32.683Z"
+      "timestamp": "2026-10-24T07:38:21.385Z",
+      "confidence": null
     },
     {
       "step": "orchestrator",
@@ -110,7 +112,8 @@
       "model": null,
       "action": "done",
       "detail": "decision=answered routed_by=scout intent=policy.question model_calls=0",
-      "timestamp": "2026-10-23T08:25:33.247Z"
+      "timestamp": "2026-10-24T07:38:21.787Z",
+      "confidence": null
     }
   ],
   "model_calls": 0,
@@ -130,12 +133,12 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5KXV0R7JBKYYJGV7QJBSFB1",
+    "contractId": "01M5PDHAT40T35FZW9GWFMRN4S",
     "clarification": null,
-    "latencyMs": 3.2576
+    "latencyMs": 4.1125
   },
   "explanation": [],
-  "trace_id": "trace-20261023-082532-060b9b",
+  "trace_id": "trace-20261024-073821-b46795",
   "request_id": "S11",
-  "log_path": "logs/trace-20261023-082532-060b9b.jsonl"
+  "log_path": "logs/trace-20261024-073821-b46795.jsonl"
 }

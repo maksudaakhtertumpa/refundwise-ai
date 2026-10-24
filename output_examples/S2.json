@@ -8,8 +8,8 @@
   "evidence": [
     {
       "id": "E1",
-      "source": "shop_orders.orders",
-      "sql": "SELECT * FROM shop_orders.orders WHERE order_id = 'ORD-1017' AND customer_id = 'C007'",
+      "source": "lightning.metastore.refundwise.refundwise_usl.orders",
+      "sql": "SELECT order_id, customer_id, order_date, delivery_date, product_name, category, unit_price, quantity, order_total, payment_method, status, final_sale\nFROM lightning.metastore.refundwise.refundwise_usl.orders\nWHERE order_id = 'ORD-1017' AND customer_id = 'C007'",
       "rows": [
         {
           "order_id": "ORD-1017",
@@ -26,19 +26,19 @@
           "final_sale": "false"
         }
       ],
-      "note": "shop_orders.orders"
+      "note": "lightning.metastore.refundwise.refundwise_usl.orders"
     },
     {
       "id": "E2",
-      "source": "support_desk.refund_history",
-      "sql": "SELECT * FROM support_desk.refund_history WHERE customer_id = 'C007'",
+      "source": "lightning.metastore.refundwise.refundwise_usl.refund_history",
+      "sql": "SELECT refund_id, customer_id, order_id, request_date, amount, reason, decision\nFROM lightning.metastore.refundwise.refundwise_usl.refund_history\nWHERE customer_id = 'C007'",
       "rows": [],
-      "note": "support_desk.refund_history"
+      "note": "lightning.metastore.refundwise.refundwise_usl.refund_history"
     },
     {
       "id": "E3",
-      "source": "policy_kb.refund_policy",
-      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Electronics' OR category = 'ALL'",
+      "source": "lightning.metastore.refundwise.refundwise_usl.refund_policy",
+      "sql": "SELECT rule_id, category, reason_type, window_days, auto_approve_limit, outcome, rule_text\nFROM lightning.metastore.refundwise.refundwise_usl.refund_policy\nWHERE category = 'Electronics' OR category = 'ALL'",
       "rows": [
         {
           "rule_id": "R1",
@@ -81,7 +81,7 @@
           "category": "ALL",
           "reason_type": "any",
           "window_days": "0",
-          "auto_approve_limit": "0E-18",
+          "auto_approve_limit": "0.00",
           "outcome": "reject",
           "rule_text": "Items marked final sale cannot be refunded unless they are defective."
         },
@@ -99,7 +99,7 @@
           "category": "ALL",
           "reason_type": "any",
           "window_days": "90",
-          "auto_approve_limit": "0E-18",
+          "auto_approve_limit": "0.00",
           "outcome": "human_review",
           "rule_text": "Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse."
         },
@@ -108,7 +108,7 @@
           "category": "ALL",
           "reason_type": "any",
           "window_days": "0",
-          "auto_approve_limit": "0E-18",
+          "auto_approve_limit": "0.00",
           "outcome": "reject",
           "rule_text": "An order can be refunded only once. Requests for an order that was already refunded are rejected."
         },
@@ -117,12 +117,12 @@
           "category": "ALL",
           "reason_type": "any",
           "window_days": "0",
-          "auto_approve_limit": "0E-18",
+          "auto_approve_limit": "0.00",
           "outcome": "human_review",
           "rule_text": "When the customer's claim conflicts with order or carrier records, the case goes to human review."
         }
       ],
-      "note": "policy_kb.refund_policy"
+      "note": "lightning.metastore.refundwise.refundwise_usl.refund_policy"
     }
   ],
   "checks": {
@@ -147,7 +147,7 @@
       "R2"
     ],
     "confidence": 1.0,
-    "rationale": "ORD-1017 is an Electronics order delivered 2026-08-20 (E1); with demo_today 2026-10-25, days_since_delivery is 66. R2 allows Electronics change-of-mind returns only within 15 days of delivery (R1 allows 30 days generally), so the request is outside the applicable window. The order is not final sale, not already refunded, under $200, and has no prior refunds (E1, E2), but no change-of-mind approval rule applies after the window has lapsed.",
+    "rationale": "ORD-1017 is an Electronics order (wireless headphones) delivered on 2026-08-20 per E1. With demo_today 2026-10-25, days_since_delivery is 66. Because the reason is changed_mind and the category is Electronics, R2 governs and accepts change-of-mind returns only within 15 days of delivery; the general 30-day R1 window also does not apply since 66 days exceed it. The order is not final sale, has not been refunded before, and is under $200 (E1, E2), but no change-of-mind approval rule applies after the window has lapsed.",
     "evidence_ids": [
       "E1",
       "E2"
@@ -156,17 +156,19 @@
   "critique": {
     "verdict": "accept",
     "missing_evidence": "",
-    "reason": "All factual claims are supported by evidence ids and match the Python checks: ORD-1017 is Electronics delivered 2026-08-20 (E1), days_since_delivery is 66 (checks), R2 sets a 15-day Electronics change-of-mind window (E3), R1 sets a 30-day general window (E3), the order is not final sale, not already refunded, $149.00 total, and has zero prior refunds (E1, E2, checks). Since 66 days exceeds the 15-day window, the reject decision under R2 is correct.",
-    "issues": []
+    "reason": "All facts agree with E1/E2 and the Python checks: ORD-1017 is Electronics, delivered 2026-08-20, 66 days since delivery, changed_mind, $149.00, not final sale, not previously refunded. Both R1 (30-day, ALL) and R2 (15-day, Electronics) change-of-mind windows are exceeded, so reject is correct and no auto-approval or human-review path applies. Minor citation gap: the rationale cites policy rules R1/R2 but evidence_ids omits E3 (refund_policy); adding E3 would not change the outcome.",
+    "issues": [
+      "evidence_ids omits E3, the source for rules R1 and R2 cited in the rationale"
+    ]
   },
   "decision": "reject",
   "confidence": 1.0,
   "rules_applied": [
     "R2"
   ],
-  "customer_reply": "We're sorry you're not satisfied with the wireless headphones from order ORD-1017. Unfortunately, change-of-mind returns for Electronics items must be requested within 15 days of delivery, and your order was delivered on August 20, 2026, which is beyond that window. We hope you'll consider our other products in the future.",
+  "customer_reply": "We're sorry you're not satisfied with the wireless headphones. Unfortunately, change-of-mind returns for Electronics items must be requested within 15 days of delivery, and your order was delivered on August 20, 2026, which is beyond that window. We hope you'll consider our other products in the future.",
   "limitations": [
-    "Could not verify whether the headphones were unopened, as required by policy for Electronics change-of-mind returns."
+    "Could not verify whether the headphones were unopened, as required by policy R2."
   ],
   "trace": [
     {
@@ -174,8 +176,9 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"refund.request\", \"score\": 0.924, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5KWE5DHM7V4KWWPEEK8D5AK\", \"latencyMs\": 5.5685}",
-      "timestamp": "2026-10-23T08:01:02.904Z"
+      "detail": "{\"intent\": \"refund.request\", \"score\": 0.924, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PCB0JHPXVNXRJ2525S2QTJ\", \"latencyMs\": 7.5998}",
+      "timestamp": "2026-10-24T07:17:25.721Z",
+      "confidence": null
     },
     {
       "step": "scout",
@@ -183,7 +186,8 @@
       "model": null,
       "action": "contract.verified",
       "detail": "agent.review: ok",
-      "timestamp": "2026-10-23T08:01:02.904Z"
+      "timestamp": "2026-10-24T07:17:25.722Z",
+      "confidence": null
     },
     {
       "step": "intake",
@@ -191,23 +195,8 @@
       "model": null,
       "action": "skipped",
       "detail": "Scout contract already bound order_id=ORD-1017 reason_type=changed_mind",
-      "timestamp": "2026-10-23T08:01:02.904Z"
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-      "action": "tool_round",
-      "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-23T08:01:05.774Z"
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": null,
-      "action": "run_sql",
-      "detail": "E1 ok=True source=shop_orders.orders",
-      "timestamp": "2026-10-23T08:01:06.476Z"
+      "timestamp": "2026-10-24T07:17:25.722Z",
+      "confidence": null
     },
     {
       "step": "evidence",
@@ -215,15 +204,17 @@
       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-23T08:01:08.965Z"
+      "timestamp": "2026-10-24T07:17:28.919Z",
+      "confidence": null
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": null,
       "action": "run_sql",
-      "detail": "E2 ok=True source=support_desk.refund_history",
-      "timestamp": "2026-10-23T08:01:09.298Z"
+      "detail": "E1 ok=True source=lightning.metastore.refundwise.refundwise_usl.orders",
+      "timestamp": "2026-10-24T07:17:29.750Z",
+      "confidence": null
     },
     {
       "step": "evidence",
@@ -231,15 +222,35 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-23T08:01:10.251Z"
+      "timestamp": "2026-10-24T07:17:30.688Z",
+      "confidence": null
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": null,
       "action": "run_sql",
-      "detail": "E3 ok=True source=policy_kb.refund_policy",
-      "timestamp": "2026-10-23T08:01:10.605Z"
+      "detail": "E2 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_history",
+      "timestamp": "2026-10-24T07:17:30.968Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-24T07:17:31.913Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E3 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_policy",
+      "timestamp": "2026-10-24T07:17:32.220Z",
+      "confidence": null
     },
     {
       "step": "checks",
@@ -247,7 +258,8 @@
       "model": null,
       "action": "compute",
       "detail": "{'days_since_delivery': 66, 'days_since_order': 70, 'delivered': True, 'order_total': 149.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-08-20', 'order_date': '2026-08-16', 'order_found': True, 'order_belongs_to_customer': True}",
-      "timestamp": "2026-10-23T08:01:10.605Z"
+      "timestamp": "2026-10-24T07:17:32.220Z",
+      "confidence": null
     },
     {
       "step": "decide",
@@ -255,7 +267,17 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "propose",
       "detail": "Propose decision from checks and policy",
-      "timestamp": "2026-10-23T08:01:55.636Z"
+      "timestamp": "2026-10-24T07:18:03.966Z",
+      "confidence": null
+    },
+    {
+      "step": "decide",
+      "agent": "decide",
+      "model": null,
+      "action": "proposal",
+      "detail": "reject rules=['R2'] evidence=['E1', 'E2']",
+      "timestamp": "2026-10-24T07:18:03.967Z",
+      "confidence": 1.0
     },
     {
       "step": "critic",
@@ -263,15 +285,26 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "review",
       "detail": "Check proposal against evidence and checks",
-      "timestamp": "2026-10-23T08:02:40.675Z"
+      "timestamp": "2026-10-24T07:18:48.995Z",
+      "confidence": null
+    },
+    {
+      "step": "critic",
+      "agent": "policy-verifier",
+      "model": null,
+      "action": "verify_claims",
+      "detail": "All cited evidence, rules, numbers and windows match the checks.",
+      "timestamp": "2026-10-24T07:18:48.996Z",
+      "confidence": null
     },
     {
       "step": "critic",
       "agent": "critic",
       "model": null,
       "action": "verdict",
-      "detail": "{\"verdict\": \"accept\", \"reason\": \"All factual claims are supported by evidence ids and match the Python checks: ORD-1017 is Electronics delivered 2026-08-20 (E1), days_since_delivery is 66 (checks), R2 sets a 15-day Electronics change-of-mind window (E3), R1 sets a 30-day general window (E3), the order is not final sale, not already refunded, $149.00 total, and has zero prior refunds (E1, E2, checks). Since 66 days exceeds the 15-day window, the reject decision under R2 is correct.\", \"decision\": \"reject\"}",
-      "timestamp": "2026-10-23T08:02:40.675Z"
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"All facts agree with E1/E2 and the Python checks: ORD-1017 is Electronics, delivered 2026-08-20, 66 days since delivery, changed_mind, $149.00, not final sale, not previously refunded. Both R1 (30-day, ALL) and R2 (15-day, Electronics) change-of-mind windows are exceeded, so reject is correct and no auto-approval or human-review path applies. Minor citation gap: the rationale cites policy rules R1/R2 but evidence_ids omits E3 (refund_policy); adding E3 would not change the outcome.\", \"decision\": \"reject\", \"revise_target\": null}",
+      "timestamp": "2026-10-24T07:18:48.996Z",
+      "confidence": 1.0
     },
     {
       "step": "reporter",
@@ -279,15 +312,26 @@
       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "write",
       "detail": "Write customer reply and explanation",
-      "timestamp": "2026-10-23T08:03:31.663Z"
+      "timestamp": "2026-10-24T07:21:24.265Z",
+      "confidence": null
+    },
+    {
+      "step": "reporter",
+      "agent": "final-reviewer",
+      "model": null,
+      "action": "review",
+      "detail": "Every explanation step cites real evidence and the reply matches the decision.",
+      "timestamp": "2026-10-24T07:21:24.266Z",
+      "confidence": null
     },
     {
       "step": "reporter",
       "agent": "reporter",
       "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified delivery date, category, order total, and final\\u2011sale status.\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1017 delivered 2026-08-20, category Electronics, order total $149.00, final_sale false.\"}, {\"step\": \"Checked refund history for prior refunds in the last 90 days.\", \"evidence_id\": \"E2\", \"detail\": \"No approved refunds found for customer C007 in the last 90 days.\"}, {\"step\": \"Applied Electronics change-of-mind policy (15\\u2011day window).\", \"evidence_id\": \"E3\", \"detail\": \"Policy allows Electronics change-of-mind returns only within 15 days of delivery; 66 days since delivery exceeds this window, making the refund ineligible.\"}]}",
-      "timestamp": "2026-10-23T08:03:31.663Z"
+      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified delivery date, category, order total, and final\\u2011sale status.\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1017 delivered 2026-08-20, category Electronics, order total $149.00, final_sale false.\"}, {\"step\": \"Checked refund history for prior refunds in the last 90 days.\", \"evidence_id\": \"E2\", \"detail\": \"No approved refunds found for customer C007 in the last 90 days.\"}, {\"step\": \"Applied Electronics change\\u2011of\\u2011mind policy R2 (15\\u2011day window).\", \"evidence_id\": \"E3\", \"detail\": \"Policy R2 allows Electronics change\\u2011of\\u2011mind returns only within 15 days of delivery and requires items to be unopened; 66 days since delivery exceeds this window, making the refund ineligible.\"}]}",
+      "timestamp": "2026-10-24T07:21:24.266Z",
+      "confidence": null
     },
     {
       "step": "orchestrator",
@@ -295,7 +339,8 @@
       "model": null,
       "action": "done",
       "detail": "decision=reject confidence=1.0 model_calls=6/12",
-      "timestamp": "2026-10-23T08:03:31.663Z"
+      "timestamp": "2026-10-24T07:21:24.266Z",
+      "confidence": null
     }
   ],
   "model_calls": 6,
@@ -322,9 +367,9 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5KWE5DHM7V4KWWPEEK8D5AK",
+    "contractId": "01M5PCB0JHPXVNXRJ2525S2QTJ",
     "clarification": null,
-    "latencyMs": 5.5685
+    "latencyMs": 7.5998
   },
   "explanation": [
     {
@@ -338,12 +383,12 @@
       "detail": "No approved refunds found for customer C007 in the last 90 days."
     },
     {
-      "step": "Applied Electronics change-of-mind policy (15\u2011day window).",
+      "step": "Applied Electronics change\u2011of\u2011mind policy R2 (15\u2011day window).",
       "evidence_id": "E3",
-      "detail": "Policy allows Electronics change-of-mind returns only within 15 days of delivery; 66 days since delivery exceeds this window, making the refund ineligible."
+      "detail": "Policy R2 allows Electronics change\u2011of\u2011mind returns only within 15 days of delivery and requires items to be unopened; 66 days since delivery exceeds this window, making the refund ineligible."
     }
   ],
-  "trace_id": "trace-20261023-080102-eb0a0c",
+  "trace_id": "trace-20261024-071725-3e1da0",
   "request_id": "S2",
-  "log_path": "logs/trace-20261023-080102-eb0a0c.jsonl"
+  "log_path": "logs/trace-20261024-071725-3e1da0.jsonl"
 }

@@ -1,4 +1,7 @@
-"""Run every sample request and write case files under output_examples/."""
+"""Run every sample request and write case files under output_examples/.
+
+Usage: python scripts/run_demo.py [input_examples/edge_cases.json]
+"""
 
 from __future__ import annotations
 
@@ -13,7 +16,8 @@ from agent.orchestrator import run_case  # noqa: E402
 
 
 def main() -> None:
-    requests_path = ROOT / "input_examples" / "requests.json"
+    # Default: the 12 demo scenarios. Pass another file, e.g. input_examples/edge_cases.json.
+    requests_path = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "input_examples" / "requests.json"
     payload = json.loads(requests_path.read_text())
     demo_today = payload.get("demo_today") or "2026-10-25"
     out_dir = ROOT / "output_examples"

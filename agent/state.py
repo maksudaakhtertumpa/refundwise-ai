@@ -56,6 +56,7 @@ class TraceEvent:
     action: str
     detail: str
     timestamp: str = field(default_factory=utc_now)
+    confidence: float | None = None
 
 
 @dataclass
@@ -92,6 +93,7 @@ class CaseFile:
         action: str,
         detail: str,
         model: str | None = None,
+        confidence: float | None = None,
     ) -> None:
         """Append a trace event."""
         self.trace.append(
@@ -101,6 +103,7 @@ class CaseFile:
                 model=model,
                 action=action,
                 detail=detail,
+                confidence=confidence,
             )
         )
 

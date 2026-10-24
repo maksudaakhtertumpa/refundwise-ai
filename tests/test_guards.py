@@ -28,8 +28,8 @@ from agent.tools_zetaris import _safety_error, run_sql  # noqa: E402
 def case_with(order_rows, history_rows, customer="C003", order_id="ORD-1042", reason="defective"):
     case = CaseFile(message="test", customer_id=customer, demo_today="2026-10-25")
     case.order_id, case.reason_type = order_id, reason
-    case.add_evidence(source="shop_orders.orders", sql="", rows=order_rows)
-    case.add_evidence(source="support_desk.refund_history", sql="", rows=history_rows)
+    case.add_evidence(source="lightning.metastore.refundwise.refundwise_usl.orders", sql="", rows=order_rows)
+    case.add_evidence(source="lightning.metastore.refundwise.refundwise_usl.refund_history", sql="", rows=history_rows)
     run_checks(case)
     return case
 
@@ -42,23 +42,46 @@ ORDER = {
 
 class SqlSafety(unittest.TestCase):
     def test_blocks_multiple_statements(self):
-        self.assertIsNotNone(_safety_error("SELECT 1; DROP TABLE shop_orders.orders"))
+        self.assertIsNotNone(_safety_error("SELECT 1; DROP TABLE lightning.metastore.refundwise.refundwise_usl.orders"))
 
     def test_blocks_writes_and_unknown_tables(self):
-        self.assertIsNotNone(_safety_error("DELETE FROM shop_orders.orders"))
+        self.assertIsNotNone(_safety_error("DELETE FROM lightning.metastore.refundwise.refundwise_usl.orders"))
         self.assertIsNotNone(_safety_error("WITH x AS (SELECT 1) INSERT INTO a SELECT * FROM x"))
         self.assertIsNotNone(_safety_error("SELECT * FROM metastore.users"))
 
     def test_allows_normal_reads_and_keywords_inside_values(self):
-        self.assertIsNone(_safety_error("SELECT * FROM shop_orders.orders WHERE order_id = 'ORD-1042'"))
-        self.assertIsNone(_safety_error("SELECT * FROM policy_kb.refund_policy WHERE rule_text LIKE '%update%'"))
+        self.assertIsNone(_safety_error("SELECT * FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE order_id = 'ORD-1042'"))
+        self.assertIsNone(_safety_error("SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy WHERE rule_text LIKE '%update%'"))
 
     def test_model_sql_must_be_customer_scoped(self):
-        self.assertIsNotNone(scope_error_for("SELECT * FROM support_desk.refund_history", "C003"))
-        self.assertIsNotNone(scope_error_for("SELECT * FROM shop_orders.orders WHERE customer_id = 'C005'", "C003"))
-        self.assertIsNotNone(scope_error_for("SELECT email FROM support_desk.customers", "C003"))
-        self.assertIsNone(scope_error_for("SELECT * FROM support_desk.refund_history WHERE customer_id = 'C003'", "C003"))
-        self.assertIsNone(scope_error_for("SELECT * FROM policy_kb.refund_policy", "C003"))
+        self.assertIsNotNone(scope_error_for("SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_history", "C003"))
+        self.assertIsNotNone(scope_error_for("SELECT * FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE customer_id = 'C005'", "C003"))
+        self.assertIsNotNone(scope_error_for("SELECT email FROM lightning.metastore.refundwise.refundwise_usl.customers", "C003"))
+        self.assertIsNone(scope_error_for("SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_history WHERE customer_id = 'C003'", "C003"))
+        self.assertIsNone(scope_error_for("SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy", "C003"))
+
+
+class DataMart(unittest.TestCase):
+    def test_mart_and_source_names_are_allowed_and_mapped(self):
+        from agent.tools_zetaris import to_source_tables
+        self.assertIsNone(_safety_error("SELECT * FROM shop_orders.orders WHERE order_id = 'ORD-1042'"))
+        self.assertIsNone(_safety_error("SELECT * FROM refundwise_mart.orders WHERE order_id = 'ORD-1042'"))
+        self.assertEqual(
+            to_source_tables("SELECT * FROM refundwise_mart.orders o JOIN refundwise_mart.refund_history h ON 1=1"),
+            "SELECT * FROM shop_orders.orders o JOIN support_desk.refund_history h ON 1=1",
+        )
+
+    def test_usl_names_map_to_sources(self):
+        from agent.tools_zetaris import to_source_tables
+        self.assertIsNone(_safety_error("SELECT * FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE customer_id = 'C003'"))
+        self.assertEqual(to_source_tables("SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy"), "SELECT * FROM policy_kb.refund_policy")
+        self.assertIsNotNone(_safety_error("SELECT * FROM lightning.metastore.other.secret_table"))
+
+    def test_sample_mode_serves_the_mart(self):
+        res = run_sql("SELECT o.order_id, h.decision FROM refundwise_mart.orders o "
+                      "JOIN refundwise_mart.refund_history h ON h.order_id = o.order_id WHERE o.customer_id = 'C005'")
+        self.assertTrue(res["ok"], res.get("error"))
+        self.assertTrue(any(r["decision"] == "approved" for r in res["rows"]))
 
 
 class Checks(unittest.TestCase):
@@ -91,7 +114,7 @@ class Checks(unittest.TestCase):
 
 class SampleMode(unittest.TestCase):
     def test_reads_csv_snapshot(self):
-        res = run_sql("SELECT order_id, customer_id, order_total FROM shop_orders.orders WHERE order_id = 'ORD-1042'")
+        res = run_sql("SELECT order_id, customer_id, order_total FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE order_id = 'ORD-1042'")
         self.assertTrue(res["ok"], res.get("error"))
         self.assertEqual(res["rows"][0]["customer_id"], "C003")
         self.assertEqual(res.get("mode"), "sample")

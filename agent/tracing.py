@@ -28,13 +28,30 @@ _STATUS = {
     "guard_fallback": "fallback",
     "reporter_fallback": "fallback",
     "skipped": "skipped",
+    "revise": "needs_revision",
+    "repair": "repaired",
 }
+
+
+# Agents whose repeated actions are revisions of earlier work (counted as retry_count).
+_REVISABLE = {"decide", "critic", "policy-verifier", "reporter", "final-reviewer"}
 
 
 def _events(case: CaseFile) -> list[dict]:
     trace = case.trace
     rows = []
+    seen: dict[tuple[str, str], int] = {}
     for i, ev in enumerate(trace):
+        key = (ev.agent, ev.action)
+        retry = seen.get(key, 0) if ev.agent in _REVISABLE else 0
+        seen[key] = seen.get(key, 0) + 1
+        status = _STATUS.get(ev.action, "ok")
+        if ev.action == "decide" and '"risk": "block"' in (ev.detail or ""):
+            status = "blocked"
+        elif ev.action == "verdict" and '"verdict": "revise"' in (ev.detail or ""):
+            status = "needs_revision"
+        elif ev.agent in {"policy-verifier", "final-reviewer"} and ev.action != "repair" and not str(ev.detail or "").startswith(("All ", "Every ", "Revised ")):
+            status = "issues_found"
         nxt = next((t.agent for t in trace[i + 1:] if t.agent != ev.agent), None)
         rows.append(
             {
@@ -46,7 +63,9 @@ def _events(case: CaseFile) -> list[dict]:
                 "agent_name": ev.agent,
                 "action": ev.action,
                 "model": ev.model,
-                "status": "blocked" if ev.action == "decide" and '"risk": "block"' in (ev.detail or "") else _STATUS.get(ev.action, "ok"),
+                "status": status,
+                "confidence": getattr(ev, "confidence", None),
+                "retry_count": retry,
                 "target_agent": nxt,
                 "detail": (ev.detail or "")[:500],
             }
@@ -62,6 +81,8 @@ def _events(case: CaseFile) -> list[dict]:
             "action": "final",
             "model": None,
             "status": "success",
+            "confidence": case.confidence,
+            "retry_count": 0,
             "target_agent": "user",
             "detail": json.dumps(
                 {

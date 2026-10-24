@@ -8,8 +8,8 @@
   "evidence": [
     {
       "id": "E1",
-      "source": "shop_orders.orders",
-      "sql": "SELECT * FROM shop_orders.orders WHERE order_id = 'ORD-1048' AND customer_id = 'C002'",
+      "source": "lightning.metastore.refundwise.refundwise_usl.orders",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE customer_id = 'C002' AND order_id = 'ORD-1048'",
       "rows": [
         {
           "order_id": "ORD-1048",
@@ -26,12 +26,12 @@
           "final_sale": "false"
         }
       ],
-      "note": "shop_orders.orders"
+      "note": "lightning.metastore.refundwise.refundwise_usl.orders"
     },
     {
       "id": "E2",
-      "source": "support_desk.refund_history",
-      "sql": "SELECT * FROM support_desk.refund_history WHERE customer_id = 'C002'",
+      "source": "lightning.metastore.refundwise.refundwise_usl.refund_history",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_history WHERE customer_id = 'C002'",
       "rows": [
         {
           "refund_id": "RF-2004",
@@ -43,12 +43,12 @@
           "decision": "approved"
         }
       ],
-      "note": "support_desk.refund_history"
+      "note": "lightning.metastore.refundwise.refundwise_usl.refund_history"
     },
     {
       "id": "E3",
-      "source": "policy_kb.refund_policy",
-      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Home' OR category = 'ALL'",
+      "source": "lightning.metastore.refundwise.refundwise_usl.refund_policy",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy WHERE category = 'Home' OR category = 'ALL'",
       "rows": [
         {
           "rule_id": "R1",
@@ -82,7 +82,7 @@
           "category": "ALL",
           "reason_type": "any",
           "window_days": "0",
-          "auto_approve_limit": "0E-18",
+          "auto_approve_limit": "0.00",
           "outcome": "reject",
           "rule_text": "Items marked final sale cannot be refunded unless they are defective."
         },
@@ -100,7 +100,7 @@
           "category": "ALL",
           "reason_type": "any",
           "window_days": "90",
-          "auto_approve_limit": "0E-18",
+          "auto_approve_limit": "0.00",
           "outcome": "human_review",
           "rule_text": "Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse."
         },
@@ -109,7 +109,7 @@
           "category": "ALL",
           "reason_type": "any",
           "window_days": "0",
-          "auto_approve_limit": "0E-18",
+          "auto_approve_limit": "0.00",
           "outcome": "reject",
           "rule_text": "An order can be refunded only once. Requests for an order that was already refunded are rejected."
         },
@@ -118,12 +118,12 @@
           "category": "ALL",
           "reason_type": "any",
           "window_days": "0",
-          "auto_approve_limit": "0E-18",
+          "auto_approve_limit": "0.00",
           "outcome": "human_review",
           "rule_text": "When the customer's claim conflicts with order or carrier records, the case goes to human review."
         }
       ],
-      "note": "policy_kb.refund_policy"
+      "note": "lightning.metastore.refundwise.refundwise_usl.refund_policy"
     }
   ],
   "checks": {
@@ -148,7 +148,7 @@
       "R9"
     ],
     "confidence": 1.0,
-    "rationale": "Order ORD-1048 status is 'refunded' (E1), and a prior refund RF-2004 was already approved for the same order on 2026-09-28 (E2). Per R9, an order can be refunded only once; requests for an already-refunded order are rejected.",
+    "rationale": "Order ORD-1048 is already refunded (status 'refunded', E1) and a prior refund RF-2004 was approved for the same order on 2026-09-28 (E2). Per R9, an order can be refunded only once, so this duplicate request is rejected.",
     "evidence_ids": [
       "E1",
       "E2"
@@ -170,9 +170,11 @@
   "rules_applied": [
     "R9"
   ],
-  "customer_reply": "We're sorry to hear your air fryer stopped working. Our records show that a refund was already processed for order ORD-1048 on September 28, 2026, and our policy allows only one refund per order. If you have any other questions, please let us know.",
+  "customer_reply": "We're sorry to hear your air fryer is experiencing issues, but I'm unable to process a refund for order ORD-1048 as it has already been refunded on September 28, 2026. If you have a new concern with the product, please contact us so we can explore other options.",
   "limitations": [
-    "No limitations; all relevant order and refund records were verified."
+    "Physical condition of the returned item after delivery",
+    "Customer's detailed usage or fault history beyond order records",
+    "Real-time replacement or inventory availability for exchange options"
   ],
   "trace": [
     {
@@ -180,8 +182,9 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"refund.request\", \"score\": 1, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5KX8DQX1YXJ1EQHN6QQYRH9\", \"latencyMs\": 3.8157}",
-      "timestamp": "2026-10-23T08:15:23.393Z"
+      "detail": "{\"intent\": \"refund.request\", \"score\": 1, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PD29CXG7PT80VYTVNG2QX0\", \"latencyMs\": 10.3033}",
+      "timestamp": "2026-10-24T07:30:08.424Z",
+      "confidence": null
     },
     {
       "step": "scout",
@@ -189,7 +192,8 @@
       "model": null,
       "action": "contract.verified",
       "detail": "agent.review: ok",
-      "timestamp": "2026-10-23T08:15:23.393Z"
+      "timestamp": "2026-10-24T07:30:08.424Z",
+      "confidence": null
     },
     {
       "step": "intake",
@@ -197,23 +201,8 @@
       "model": null,
       "action": "skipped",
       "detail": "Scout contract already bound order_id=ORD-1048 reason_type=defective",
-      "timestamp": "2026-10-23T08:15:23.393Z"
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-      "action": "tool_round",
-      "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-23T08:15:39.257Z"
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": null,
-      "action": "run_sql",
-      "detail": "E1 ok=True source=shop_orders.orders",
-      "timestamp": "2026-10-23T08:15:39.628Z"
+      "timestamp": "2026-10-24T07:30:08.424Z",
+      "confidence": null
     },
     {
       "step": "evidence",
@@ -221,15 +210,17 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-23T08:15:40.835Z"
+      "timestamp": "2026-10-24T07:30:10.326Z",
+      "confidence": null
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": null,
       "action": "run_sql",
-      "detail": "E2 ok=True source=support_desk.refund_history",
-      "timestamp": "2026-10-23T08:15:41.058Z"
+      "detail": "E1 ok=True source=lightning.metastore.refundwise.refundwise_usl.orders",
+      "timestamp": "2026-10-24T07:30:10.997Z",
+      "confidence": null
     },
     {
       "step": "evidence",
@@ -237,15 +228,35 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-23T08:15:42.389Z"
+      "timestamp": "2026-10-24T07:30:12.211Z",
+      "confidence": null
     },
     {
       "step": "evidence",
       "agent": "evidence",
       "model": null,
       "action": "run_sql",
-      "detail": "E3 ok=True source=policy_kb.refund_policy",
-      "timestamp": "2026-10-23T08:15:42.624Z"
+      "detail": "E2 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_history",
+      "timestamp": "2026-10-24T07:30:12.934Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-24T07:30:14.294Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E3 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_policy",
+      "timestamp": "2026-10-24T07:30:14.586Z",
+      "confidence": null
     },
     {
       "step": "checks",
@@ -253,7 +264,8 @@
       "model": null,
       "action": "compute",
       "detail": "{'days_since_delivery': 31, 'days_since_order': 35, 'delivered': False, 'order_total': 139.0, 'already_refunded': True, 'approved_refunds_last_90_days': 1, 'final_sale': False, 'category': 'Home', 'over_auto_limit': False, 'order_status': 'refunded', 'delivery_date': '2026-09-24', 'order_date': '2026-09-20', 'order_found': True, 'order_belongs_to_customer': True}",
-      "timestamp": "2026-10-23T08:15:42.624Z"
+      "timestamp": "2026-10-24T07:30:14.586Z",
+      "confidence": null
     },
     {
       "step": "decide",
@@ -261,23 +273,44 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "propose",
       "detail": "Propose decision from checks and policy",
-      "timestamp": "2026-10-23T08:19:14.976Z"
+      "timestamp": "2026-10-24T07:30:49.858Z",
+      "confidence": null
+    },
+    {
+      "step": "decide",
+      "agent": "decide",
+      "model": null,
+      "action": "proposal",
+      "detail": "reject rules=['R9'] evidence=['E1', 'E2']",
+      "timestamp": "2026-10-24T07:30:49.858Z",
+      "confidence": 1.0
     },
     {
       "step": "critic",
       "agent": "critic",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "review",
       "detail": "Check proposal against evidence and checks",
-      "timestamp": "2026-10-23T08:20:00.020Z"
+      "timestamp": "2026-10-24T07:31:34.885Z",
+      "confidence": null
+    },
+    {
+      "step": "critic",
+      "agent": "policy-verifier",
+      "model": null,
+      "action": "verify_claims",
+      "detail": "All cited evidence, rules, numbers and windows match the checks.",
+      "timestamp": "2026-10-24T07:31:34.885Z",
+      "confidence": null
     },
     {
       "step": "critic",
       "agent": "critic",
       "model": null,
       "action": "verdict",
-      "detail": "{\"verdict\": \"accept\", \"reason\": \"Order already refunded (status or refund_history).\", \"decision\": \"reject\"}",
-      "timestamp": "2026-10-23T08:20:00.020Z"
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"Order already refunded (status or refund_history).\", \"decision\": \"reject\", \"revise_target\": null}",
+      "timestamp": "2026-10-24T07:31:34.886Z",
+      "confidence": 1.0
     },
     {
       "step": "reporter",
@@ -285,15 +318,26 @@
       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "write",
       "detail": "Write customer reply and explanation",
-      "timestamp": "2026-10-23T08:20:45.060Z"
+      "timestamp": "2026-10-24T07:32:19.919Z",
+      "confidence": null
+    },
+    {
+      "step": "reporter",
+      "agent": "final-reviewer",
+      "model": null,
+      "action": "review",
+      "detail": "Every explanation step cites real evidence and the reply matches the decision.",
+      "timestamp": "2026-10-24T07:32:19.919Z",
+      "confidence": null
     },
     {
       "step": "reporter",
       "agent": "reporter",
       "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified order details\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1048 for customer C002, Air Fryer, $139.00, status 'refunded'.\"}, {\"step\": \"Checked refund history\", \"evidence_id\": \"E2\", \"detail\": \"Refund RF-2004 was approved for ORD-1048 on 2026-09-28 for $139.00 with reason 'defective'.\"}, {\"step\": \"Applied refund policy\", \"evidence_id\": \"E3\", \"detail\": \"Policy permits only one refund per order; requests for already-refunded orders are rejected.\"}]}",
-      "timestamp": "2026-10-23T08:20:45.060Z"
+      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified order status and found ORD-1048 is already marked as refunded\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1048 status is 'refunded' per order records.\"}, {\"step\": \"Reviewed refund history and confirmed a prior approved refund RF-2004 for this order on 2026-09-28\", \"evidence_id\": \"E2\", \"detail\": \"Refund RF-2004 was approved for ORD-1048 in the refund history database.\"}, {\"step\": \"Applied refund policy rule R9 which permits only one refund per order\", \"evidence_id\": \"E3\", \"detail\": \"Rule R9 states an order can be refunded only once; duplicate requests are rejected.\"}]}",
+      "timestamp": "2026-10-24T07:32:19.919Z",
+      "confidence": null
     },
     {
       "step": "orchestrator",
@@ -301,7 +345,8 @@
       "model": null,
       "action": "done",
       "detail": "decision=reject confidence=1.0 model_calls=6/12",
-      "timestamp": "2026-10-23T08:20:45.060Z"
+      "timestamp": "2026-10-24T07:32:19.919Z",
+      "confidence": null
     }
   ],
   "model_calls": 6,
@@ -328,28 +373,28 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5KX8DQX1YXJ1EQHN6QQYRH9",
+    "contractId": "01M5PD29CXG7PT80VYTVNG2QX0",
     "clarification": null,
-    "latencyMs": 3.8157
+    "latencyMs": 10.3033
   },
   "explanation": [
     {
-      "step": "Verified order details",
+      "step": "Verified order status and found ORD-1048 is already marked as refunded",
       "evidence_id": "E1",
-      "detail": "Order ORD-1048 for customer C002, Air Fryer, $139.00, status 'refunded'."
+      "detail": "Order ORD-1048 status is 'refunded' per order records."
     },
     {
-      "step": "Checked refund history",
+      "step": "Reviewed refund history and confirmed a prior approved refund RF-2004 for this order on 2026-09-28",
       "evidence_id": "E2",
-      "detail": "Refund RF-2004 was approved for ORD-1048 on 2026-09-28 for $139.00 with reason 'defective'."
+      "detail": "Refund RF-2004 was approved for ORD-1048 in the refund history database."
     },
     {
-      "step": "Applied refund policy",
+      "step": "Applied refund policy rule R9 which permits only one refund per order",
       "evidence_id": "E3",
-      "detail": "Policy permits only one refund per order; requests for already-refunded orders are rejected."
+      "detail": "Rule R9 states an order can be refunded only once; duplicate requests are rejected."
     }
   ],
-  "trace_id": "trace-20261023-081523-a8e72a",
+  "trace_id": "trace-20261024-073008-222cf3",
   "request_id": "S6",
-  "log_path": "logs/trace-20261023-081523-a8e72a.jsonl"
+  "log_path": "logs/trace-20261024-073008-222cf3.jsonl"
 }

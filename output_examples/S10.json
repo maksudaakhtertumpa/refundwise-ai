@@ -8,8 +8,8 @@
   "evidence": [
     {
       "id": "E1",
-      "source": "shop_orders.orders",
-      "sql": "SELECT order_id, product_name, order_date, delivery_date, status FROM shop_orders.orders WHERE order_id = 'ORD-1042' AND customer_id = 'C003'",
+      "source": "lightning.metastore.refundwise.refundwise_usl.orders",
+      "sql": "SELECT order_id, product_name, order_date, delivery_date, status FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE order_id = 'ORD-1042' AND customer_id = 'C003'",
       "rows": [
         {
           "order_id": "ORD-1042",
@@ -36,8 +36,9 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"order.status\", \"score\": 0.9088, \"band\": \"high\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5KXTZST54Q6069GEX4GVPHS\", \"latencyMs\": 3.5117}",
-      "timestamp": "2026-10-23T08:25:31.709Z"
+      "detail": "{\"intent\": \"order.status\", \"score\": 0.9088, \"band\": \"high\", \"risk\": \"low\", \"flags\": [], \"contract\": \"01M5PDHABVS70D57TFDHC9FBJJ\", \"latencyMs\": 3.1673}",
+      "timestamp": "2026-10-24T07:38:20.927Z",
+      "confidence": null
     },
     {
       "step": "scout",
@@ -45,7 +46,8 @@
       "model": null,
       "action": "contract.verified",
       "detail": "order.lookup: ok",
-      "timestamp": "2026-10-23T08:25:31.710Z"
+      "timestamp": "2026-10-24T07:38:20.927Z",
+      "confidence": null
     },
     {
       "step": "orchestrator",
@@ -53,7 +55,8 @@
       "model": null,
       "action": "done",
       "detail": "decision=answered routed_by=scout intent=order.status model_calls=0",
-      "timestamp": "2026-10-23T08:25:32.628Z"
+      "timestamp": "2026-10-24T07:38:21.320Z",
+      "confidence": null
     }
   ],
   "model_calls": 0,
@@ -75,12 +78,12 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5KXTZST54Q6069GEX4GVPHS",
+    "contractId": "01M5PDHABVS70D57TFDHC9FBJJ",
     "clarification": null,
-    "latencyMs": 3.5117
+    "latencyMs": 3.1673
   },
   "explanation": [],
-  "trace_id": "trace-20261023-082531-6e014a",
+  "trace_id": "trace-20261024-073820-dabbd2",
   "request_id": "S10",
-  "log_path": "logs/trace-20261023-082531-6e014a.jsonl"
+  "log_path": "logs/trace-20261024-073820-dabbd2.jsonl"
 }

@@ -7,6 +7,7 @@ import json
 from agent.parse import extract_json_object, message_text
 from agent.runtime import tracked_chat
 from agent.state import CaseFile
+from agent.verifier import verify_proposal
 
 VERDICTS = frozenset({"accept", "revise", "escalate"})
 
@@ -36,7 +37,24 @@ def run_critic(case: CaseFile) -> dict:
         "reason": "Critic did not return valid JSON.",
         "issues": ["invalid_json"],
     }
+    issues = verify_proposal(case)
+    case.add_trace(
+        step="critic",
+        agent="policy-verifier",
+        action="verify_claims",
+        detail=("; ".join(issues) if issues else "All cited evidence, rules, numbers and windows match the checks."),
+        confidence=None,
+    )
     guard = apply_hard_guards(case)
+    if issues and not guard:
+        critique = {
+            **critique,
+            "model_verdict": critique.get("verdict"),
+            "verdict": "revise",
+            "revise_target": "decide",
+            "reason": "Policy verifier found problems: " + "; ".join(issues),
+            "issues": issues,
+        }
     if guard:
         critique = {
             **critique,
@@ -72,8 +90,10 @@ def run_critic(case: CaseFile) -> dict:
                 "verdict": critique.get("verdict"),
                 "reason": critique.get("reason"),
                 "decision": case.decision,
+                "revise_target": critique.get("revise_target"),
             }
         ),
+        confidence=case.confidence,
     )
     return critique
 

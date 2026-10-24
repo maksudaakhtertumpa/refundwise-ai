@@ -1,0 +1,1 @@
+{"demo_today": "2026-10-25", "requests": [{"id": "S8", "customer_id": "C004", "message": "My Bluetooth speaker from ORD-1070 never arrived.", "expected": "human_review", "why": "Customer says not received, but the order record shows delivered on 2026-10-17; conflicting evidence (R10)."}]}

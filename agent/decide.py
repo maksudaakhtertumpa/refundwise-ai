@@ -33,6 +33,8 @@ Guidance:
 - already_refunded: R9 reject.
 - Customer says not_received but delivered is true: R10 human_review.
 confidence is between 0 and 1.
+If "critic_feedback" is present, your previous proposal was rejected: fix every
+issue it lists, using only the checks and evidence.
 """
 
 
@@ -53,6 +55,13 @@ def propose_decision(case: CaseFile) -> None:
             action="invalid_json",
             detail="Fell back to human_review",
         )
+    case.add_trace(
+        step="decide",
+        agent="decide",
+        action="proposal",
+        detail=f"{payload['decision']} rules={payload['rules_applied']} evidence={payload.get('evidence_ids')}",
+        confidence=payload.get("confidence"),
+    )
     case.proposed_decision = payload
     case.decision = payload["decision"]
     case.confidence = payload["confidence"]
@@ -111,6 +120,14 @@ def _user_payload(case: CaseFile) -> str:
             "checks": case.checks,
             "policy_rules": policies,
             "evidence": evidence,
+            **(
+                {
+                    "previous_proposal": case.proposed_decision,
+                    "critic_feedback": (case.critique or {}).get("issues") or [(case.critique or {}).get("reason")],
+                }
+                if (case.critique or {}).get("verdict") == "revise"
+                else {}
+            ),
         },
         default=str,
     )

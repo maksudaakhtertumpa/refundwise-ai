@@ -153,10 +153,10 @@ def _answer_status(case: CaseFile, order_id: str | None) -> None:
         return
     sql = (
         "SELECT order_id, product_name, order_date, delivery_date, status "
-        f"FROM shop_orders.orders WHERE order_id = '{order_id}' AND customer_id = '{case.customer_id}'"
+        f"FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE order_id = '{order_id}' AND customer_id = '{case.customer_id}'"
     )
     res = run_sql(sql)
-    item = case.add_evidence(source="shop_orders.orders", sql=sql, rows=res.get("rows", []), note="order status")
+    item = case.add_evidence(source="lightning.metastore.refundwise.refundwise_usl.orders", sql=sql, rows=res.get("rows", []), note="order status")
     case.order_id = order_id
     if not res.get("ok"):
         _finish(case, "human_review", 0.0,
@@ -176,10 +176,10 @@ def _answer_status(case: CaseFile, order_id: str | None) -> None:
 
 def _answer_policy(case: CaseFile) -> None:
     """Policy questions: read the rules from Zetaris and quote the relevant ones."""
-    sql = "SELECT rule_id, category, reason_type, rule_text FROM policy_kb.refund_policy ORDER BY rule_id"
+    sql = "SELECT rule_id, category, reason_type, rule_text FROM lightning.metastore.refundwise.refundwise_usl.refund_policy ORDER BY rule_id"
     res = run_sql(sql)
     rows = res.get("rows", [])
-    item = case.add_evidence(source="policy_kb.refund_policy", sql=sql, rows=rows, note="policy question")
+    item = case.add_evidence(source="lightning.metastore.refundwise.refundwise_usl.refund_policy", sql=sql, rows=rows, note="policy question")
     if not res.get("ok") or not rows:
         _finish(case, "human_review", 0.0,
                 "Sorry, I can't look up our refund policy right now. A support lead will answer your question shortly.",

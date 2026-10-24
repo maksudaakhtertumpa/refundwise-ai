@@ -1,0 +1,398 @@
+{
+  "message": "My hair dryer from ORD-1020 stopped heating. I want a refund.",
+  "customer_id": "C003",
+  "demo_today": "2026-10-25",
+  "intent": "refund_request",
+  "reason_type": "defective",
+  "order_id": "ORD-1020",
+  "evidence": [
+    {
+      "id": "E1",
+      "source": "shop_orders.orders",
+      "sql": "SELECT * FROM shop_orders.orders WHERE customer_id = 'C003' AND order_id = 'ORD-1020'",
+      "rows": [
+        {
+          "order_id": "ORD-1020",
+          "customer_id": "C003",
+          "order_date": "2026-08-22",
+          "delivery_date": "2026-08-26",
+          "product_name": "Hair Dryer",
+          "category": "Personal Care",
+          "unit_price": "75.00",
+          "quantity": "2",
+          "order_total": "150.00",
+          "payment_method": "e_wallet",
+          "status": "delivered",
+          "final_sale": "true"
+        }
+      ],
+      "note": "shop_orders.orders"
+    },
+    {
+      "id": "E2",
+      "source": "support_desk.refund_history",
+      "sql": "SELECT * FROM support_desk.refund_history WHERE customer_id = 'C003'",
+      "rows": [
+        {
+          "refund_id": "RF-2009",
+          "customer_id": "C003",
+          "order_id": "ORD-1005",
+          "request_date": "2025-12-02",
+          "amount": "149.00",
+          "reason": "wrong_size",
+          "decision": "approved"
+        }
+      ],
+      "note": "support_desk.refund_history"
+    },
+    {
+      "id": "E3",
+      "source": "policy_kb.refund_policy",
+      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Personal Care' OR category = 'ALL'",
+      "rows": [
+        {
+          "rule_id": "R1",
+          "category": "ALL",
+          "reason_type": "changed_mind",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Unused items may be returned for a full refund within 30 days of delivery."
+        },
+        {
+          "rule_id": "R3",
+          "category": "ALL",
+          "reason_type": "defective",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Items that arrive damaged or defective are refunded in full within 30 days of delivery; a photo is requested."
+        },
+        {
+          "rule_id": "R4",
+          "category": "ALL",
+          "reason_type": "not_received",
+          "window_days": "14",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "If an order has not been delivered 14 days after the order date, the customer may choose a refund or a replacement."
+        },
+        {
+          "rule_id": "R5",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "Items marked final sale cannot be refunded unless they are defective."
+        },
+        {
+          "rule_id": "R7",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "200.00",
+          "outcome": "human_review",
+          "rule_text": "Any refund above 200.00 must be reviewed by a support lead before approval."
+        },
+        {
+          "rule_id": "R8",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "90",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse."
+        },
+        {
+          "rule_id": "R9",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "An order can be refunded only once. Requests for an order that was already refunded are rejected."
+        },
+        {
+          "rule_id": "R10",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "When the customer's claim conflicts with order or carrier records, the case goes to human review."
+        }
+      ],
+      "note": "policy_kb.refund_policy"
+    }
+  ],
+  "checks": {
+    "days_since_delivery": 60,
+    "days_since_order": 64,
+    "delivered": true,
+    "order_total": 150.0,
+    "already_refunded": false,
+    "approved_refunds_last_90_days": 0,
+    "final_sale": true,
+    "category": "Personal Care",
+    "over_auto_limit": false,
+    "order_status": "delivered",
+    "delivery_date": "2026-08-26",
+    "order_date": "2026-08-22",
+    "order_found": true,
+    "order_belongs_to_customer": true
+  },
+  "proposed_decision": {
+    "decision": "reject",
+    "rules_applied": [
+      "R3"
+    ],
+    "confidence": 1.0,
+    "rationale": "Reason is defective, but R3 approves defective items only within 30 days of delivery; E1 shows delivery on 2026-08-26 and checks show 60 days since delivery, so the window has expired. The item is final sale (E1), and although R5 excepts defective items, no approving rule applies outside the R3 window. Order total $150.00 is under $200 (R7 not triggered) and there are 0 approved refunds in the last 90 days (E2; R8 not triggered).",
+    "evidence_ids": [
+      "E1",
+      "E2"
+    ]
+  },
+  "critique": {
+    "verdict": "accept",
+    "missing_evidence": "",
+    "reason": "Every factual claim is backed by E1/E2/E3 and matches the Python checks: delivery 2026-08-26 with 60 days since delivery exceeds R3's 30-day defective window; final_sale is true in E1 but R5's defective exception does not itself approve; order total $150.00 is under $200 so R7 does not trigger; approved_refunds_last_90_days is 0 so R8 does not trigger.",
+    "issues": []
+  },
+  "decision": "reject",
+  "confidence": 1.0,
+  "rules_applied": [
+    "R3"
+  ],
+  "customer_reply": "We're sorry to hear that your Hair Dryer from order ORD-1020 stopped heating. Unfortunately, we're unable to approve a refund because the item was delivered on August 26, 2026, which is more than 30 days ago. Our defective-item policy only covers claims made within 30 days of delivery, and this order is also marked as final sale. We appreciate your understanding.",
+  "limitations": [
+    "The customer's defect claim could not be independently verified with a photo, but the request falls outside the 30-day window regardless."
+  ],
+  "trace": [
+    {
+      "step": "scout",
+      "agent": "scout-intent",
+      "model": null,
+      "action": "decide",
+      "detail": "{\"intent\": \"refund.request\", \"score\": 0.9546, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5P4QX3SW4FCA0EVV5WA387Y\", \"latencyMs\": 12.9288}",
+      "timestamp": "2026-10-24T05:04:39.571Z",
+      "confidence": null
+    },
+    {
+      "step": "scout",
+      "agent": "executor",
+      "model": null,
+      "action": "contract.verified",
+      "detail": "agent.review: ok",
+      "timestamp": "2026-10-24T05:04:39.580Z",
+      "confidence": null
+    },
+    {
+      "step": "intake",
+      "agent": "intake",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "classify",
+      "detail": "Extract intent, reason_type, order_id",
+      "timestamp": "2026-10-24T05:04:42.916Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-24T05:04:44.400Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E1 ok=True source=shop_orders.orders",
+      "timestamp": "2026-10-24T05:04:45.107Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-24T05:04:45.767Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E2 ok=True source=support_desk.refund_history",
+      "timestamp": "2026-10-24T05:04:46.237Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-24T05:04:47.531Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E3 ok=True source=policy_kb.refund_policy",
+      "timestamp": "2026-10-24T05:04:48.041Z",
+      "confidence": null
+    },
+    {
+      "step": "checks",
+      "agent": "checks",
+      "model": null,
+      "action": "compute",
+      "detail": "{'days_since_delivery': 60, 'days_since_order': 64, 'delivered': True, 'order_total': 150.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': True, 'category': 'Personal Care', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-08-26', 'order_date': '2026-08-22', 'order_found': True, 'order_belongs_to_customer': True}",
+      "timestamp": "2026-10-24T05:04:48.041Z",
+      "confidence": null
+    },
+    {
+      "step": "decide",
+      "agent": "decide",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "propose",
+      "detail": "Propose decision from checks and policy",
+      "timestamp": "2026-10-24T05:05:33.069Z",
+      "confidence": null
+    },
+    {
+      "step": "decide",
+      "agent": "decide",
+      "model": null,
+      "action": "proposal",
+      "detail": "reject rules=['R3'] evidence=['E1', 'E2']",
+      "timestamp": "2026-10-24T05:05:33.070Z",
+      "confidence": 1.0
+    },
+    {
+      "step": "critic",
+      "agent": "critic",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "review",
+      "detail": "Check proposal against evidence and checks",
+      "timestamp": "2026-10-24T05:06:18.102Z",
+      "confidence": null
+    },
+    {
+      "step": "critic",
+      "agent": "policy-verifier",
+      "model": null,
+      "action": "verify_claims",
+      "detail": "All cited evidence, rules, numbers and windows match the checks.",
+      "timestamp": "2026-10-24T05:06:18.103Z",
+      "confidence": null
+    },
+    {
+      "step": "critic",
+      "agent": "critic",
+      "model": null,
+      "action": "verdict",
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"Every factual claim is backed by E1/E2/E3 and matches the Python checks: delivery 2026-08-26 with 60 days since delivery exceeds R3's 30-day defective window; final_sale is true in E1 but R5's defective exception does not itself approve; order total $150.00 is under $200 so R7 does not trigger; approved_refunds_last_90_days is 0 so R8 does not trigger.\", \"decision\": \"reject\", \"revise_target\": null}",
+      "timestamp": "2026-10-24T05:06:18.103Z",
+      "confidence": 1.0
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "write",
+      "detail": "Write customer reply and explanation",
+      "timestamp": "2026-10-24T05:07:35.767Z",
+      "confidence": null
+    },
+    {
+      "step": "reporter",
+      "agent": "final-reviewer",
+      "model": null,
+      "action": "review",
+      "detail": "Every explanation step cites real evidence and the reply matches the decision.",
+      "timestamp": "2026-10-24T05:07:35.767Z",
+      "confidence": null
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": null,
+      "action": "reply",
+      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified order and delivery details\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1020 for customer C003 was delivered on 2026-08-26; the Hair Dryer order total is $150.00 and the item is marked final sale.\"}, {\"step\": \"Checked days since delivery against policy window\", \"evidence_id\": \"E1\", \"detail\": \"Records show 60 days have passed since delivery, exceeding the 30-day defective-item window.\"}, {\"step\": \"Reviewed recent refund history\", \"evidence_id\": \"E2\", \"detail\": \"Customer C003 has 0 approved refunds in the last 90 days, so no abuse-related review is triggered.\"}, {\"step\": \"Applied defective item and final sale policy\", \"evidence_id\": \"E3\", \"detail\": \"Defective items are eligible for a full refund within 30 days of delivery; final sale items cannot be refunded outside that window. Because the window has expired, the request is rejected.\"}]}",
+      "timestamp": "2026-10-24T05:07:35.767Z",
+      "confidence": null
+    },
+    {
+      "step": "orchestrator",
+      "agent": "orchestrator",
+      "model": null,
+      "action": "done",
+      "detail": "decision=reject confidence=1.0 model_calls=7/12",
+      "timestamp": "2026-10-24T05:07:35.767Z",
+      "confidence": null
+    }
+  ],
+  "model_calls": 7,
+  "scout": {
+    "intent": "refund.request",
+    "score": 0.9546,
+    "band": "high",
+    "risk": {
+      "level": "medium",
+      "flags": [],
+      "redactions": [],
+      "approvals": []
+    },
+    "parameters": {
+      "order_id": "ORD-1020",
+      "reason_type": "other"
+    },
+    "toolPlan": [
+      "order.lookup -> zetaris.run_sql",
+      "refund.history -> zetaris.run_sql",
+      "policy.lookup -> zetaris.run_sql",
+      "policy.check -> refundwise.checks",
+      "agent.review -> refundwise.multi_agent",
+      "reply.compose -> refundwise.reporter"
+    ],
+    "modelProfile": "nemotron-lightning",
+    "contractId": "01M5P4QX3SW4FCA0EVV5WA387Y",
+    "clarification": null,
+    "latencyMs": 12.9288
+  },
+  "explanation": [
+    {
+      "step": "Verified order and delivery details",
+      "evidence_id": "E1",
+      "detail": "Order ORD-1020 for customer C003 was delivered on 2026-08-26; the Hair Dryer order total is $150.00 and the item is marked final sale."
+    },
+    {
+      "step": "Checked days since delivery against policy window",
+      "evidence_id": "E1",
+      "detail": "Records show 60 days have passed since delivery, exceeding the 30-day defective-item window."
+    },
+    {
+      "step": "Reviewed recent refund history",
+      "evidence_id": "E2",
+      "detail": "Customer C003 has 0 approved refunds in the last 90 days, so no abuse-related review is triggered."
+    },
+    {
+      "step": "Applied defective item and final sale policy",
+      "evidence_id": "E3",
+      "detail": "Defective items are eligible for a full refund within 30 days of delivery; final sale items cannot be refunded outside that window. Because the window has expired, the request is rejected."
+    }
+  ],
+  "trace_id": "trace-20261024-050439-c61d11",
+  "request_id": "E2",
+  "log_path": "logs/trace-20261024-050439-c61d11.jsonl"
+}

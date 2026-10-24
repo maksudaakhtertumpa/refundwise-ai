@@ -79,6 +79,15 @@ def _run_case(message: str, customer_id: str, demo_today: str | None, request_id
                 )
                 break
             revisions += 1
+            if critique.get("revise_target") == "decide":
+                case.add_trace(
+                    step="orchestrator",
+                    agent="orchestrator",
+                    action="revise",
+                    detail=f"revision {revisions}: decide must fix: {critique.get('reason')}"[:500],
+                )
+                propose_decision(case)
+                continue
             request = critique.get("missing_evidence") or critique.get("reason") or "Need more evidence"
             case.add_trace(
                 step="orchestrator",

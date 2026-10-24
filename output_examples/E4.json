@@ -1,0 +1,421 @@
+{
+  "message": "I don't need the air fryer from ORD-1035 anymore, I changed my mind. Refund please.",
+  "customer_id": "C001",
+  "demo_today": "2026-10-25",
+  "intent": "refund_request",
+  "reason_type": "changed_mind",
+  "order_id": "ORD-1035",
+  "evidence": [
+    {
+      "id": "E1",
+      "source": "shop_orders.orders",
+      "sql": "SELECT * FROM shop_orders.orders WHERE customer_id = 'C001' AND order_id = 'ORD-1035'",
+      "rows": [
+        {
+          "order_id": "ORD-1035",
+          "customer_id": "C001",
+          "order_date": "2026-09-25",
+          "delivery_date": "2026-09-30",
+          "product_name": "Air Fryer",
+          "category": "Home",
+          "unit_price": "139.00",
+          "quantity": "1",
+          "order_total": "139.00",
+          "payment_method": "online_banking",
+          "status": "delivered",
+          "final_sale": "false"
+        }
+      ],
+      "note": "shop_orders.orders"
+    },
+    {
+      "id": "E2",
+      "source": "support_desk.refund_history",
+      "sql": "SELECT * FROM support_desk.refund_history WHERE customer_id = 'C001'",
+      "rows": [
+        {
+          "refund_id": "RF-2005",
+          "customer_id": "C001",
+          "order_id": "ORD-1003",
+          "request_date": "2026-07-11",
+          "amount": "34.50",
+          "reason": "damaged_in_transit",
+          "decision": "approved"
+        }
+      ],
+      "note": "support_desk.refund_history"
+    },
+    {
+      "id": "E3",
+      "source": "policy_kb.refund_policy",
+      "sql": "SELECT * FROM policy_kb.refund_policy WHERE category = 'Home' OR category = 'ALL'",
+      "rows": [
+        {
+          "rule_id": "R1",
+          "category": "ALL",
+          "reason_type": "changed_mind",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Unused items may be returned for a full refund within 30 days of delivery."
+        },
+        {
+          "rule_id": "R3",
+          "category": "ALL",
+          "reason_type": "defective",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Items that arrive damaged or defective are refunded in full within 30 days of delivery; a photo is requested."
+        },
+        {
+          "rule_id": "R4",
+          "category": "ALL",
+          "reason_type": "not_received",
+          "window_days": "14",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "If an order has not been delivered 14 days after the order date, the customer may choose a refund or a replacement."
+        },
+        {
+          "rule_id": "R5",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "Items marked final sale cannot be refunded unless they are defective."
+        },
+        {
+          "rule_id": "R7",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "200.00",
+          "outcome": "human_review",
+          "rule_text": "Any refund above 200.00 must be reviewed by a support lead before approval."
+        },
+        {
+          "rule_id": "R8",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "90",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse."
+        },
+        {
+          "rule_id": "R9",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "reject",
+          "rule_text": "An order can be refunded only once. Requests for an order that was already refunded are rejected."
+        },
+        {
+          "rule_id": "R10",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0E-18",
+          "outcome": "human_review",
+          "rule_text": "When the customer's claim conflicts with order or carrier records, the case goes to human review."
+        }
+      ],
+      "note": "policy_kb.refund_policy"
+    }
+  ],
+  "checks": {
+    "days_since_delivery": 25,
+    "days_since_order": 30,
+    "delivered": true,
+    "order_total": 139.0,
+    "already_refunded": false,
+    "approved_refunds_last_90_days": 0,
+    "final_sale": false,
+    "category": "Home",
+    "over_auto_limit": false,
+    "order_status": "delivered",
+    "delivery_date": "2026-09-30",
+    "order_date": "2026-09-25",
+    "order_found": true,
+    "order_belongs_to_customer": true
+  },
+  "proposed_decision": {
+    "decision": "approve",
+    "rules_applied": [
+      "R1"
+    ],
+    "confidence": 1.0,
+    "rationale": "Reason is changed_mind. R1 approves unused items returned within 30 days of delivery; checks show days_since_delivery is 25 (E1: delivered 2026-09-30, today 2026-10-25), order_total is $139.00 under the $200.00 auto-approve limit, final_sale is false, already_refunded is false, and approved_refunds_last_90_days is 0. No conflicting rule applies.",
+    "evidence_ids": [
+      "E1"
+    ]
+  },
+  "critique": {
+    "verdict": "accept",
+    "missing_evidence": "",
+    "reason": "All factual claims in the proposal are supported by evidence (E1 for order/delivery/total/final_sale, E2/E3 for refund history and policy R1/R9) and agree with the Python checks: changed_mind, days_since_delivery 25 within R1's 30-day window, order_total $139.00 under the $200.00 auto-approve limit, final_sale false, already_refunded false, approved_refunds_last_90_days 0, no conflicting rule applies.",
+    "issues": []
+  },
+  "decision": "approve",
+  "confidence": 1.0,
+  "rules_applied": [
+    "R1"
+  ],
+  "customer_reply": "We\u2019ve approved your refund request for the air fryer from order ORD-1035. Since it was delivered on September 30, 2026 and you\u2019re within the 30-day return window, we\u2019ll process the full refund of $139.00 to your original payment method. You should see the funds reflected in your account shortly.",
+  "limitations": [
+    "Item condition (unused) was not independently verified beyond the order status.",
+    "Return window is based solely on the delivery date recorded in E1; actual receipt by the customer may vary."
+  ],
+  "trace": [
+    {
+      "step": "scout",
+      "agent": "scout-intent",
+      "model": null,
+      "action": "decide",
+      "detail": "{\"intent\": \"refund.request\", \"score\": 1, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5P520YWJNWRS36FRKT7WQVG\", \"latencyMs\": 5.3438}",
+      "timestamp": "2026-10-24T05:10:11.171Z",
+      "confidence": null
+    },
+    {
+      "step": "scout",
+      "agent": "executor",
+      "model": null,
+      "action": "contract.verified",
+      "detail": "agent.review: ok",
+      "timestamp": "2026-10-24T05:10:11.171Z",
+      "confidence": null
+    },
+    {
+      "step": "intake",
+      "agent": "intake",
+      "model": null,
+      "action": "skipped",
+      "detail": "Scout contract already bound order_id=ORD-1035 reason_type=changed_mind",
+      "timestamp": "2026-10-24T05:10:11.171Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-24T05:10:12.442Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E1 ok=True source=shop_orders.orders",
+      "timestamp": "2026-10-24T05:10:12.948Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-24T05:10:13.622Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E2 ok=True source=support_desk.refund_history",
+      "timestamp": "2026-10-24T05:10:13.939Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-24T05:10:14.685Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E3 ok=True source=policy_kb.refund_policy",
+      "timestamp": "2026-10-24T05:10:14.993Z",
+      "confidence": null
+    },
+    {
+      "step": "checks",
+      "agent": "checks",
+      "model": null,
+      "action": "compute",
+      "detail": "{'days_since_delivery': 25, 'days_since_order': 30, 'delivered': True, 'order_total': 139.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Home', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-09-30', 'order_date': '2026-09-25', 'order_found': True, 'order_belongs_to_customer': True}",
+      "timestamp": "2026-10-24T05:10:14.993Z",
+      "confidence": null
+    },
+    {
+      "step": "decide",
+      "agent": "decide",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "propose",
+      "detail": "Propose decision from checks and policy",
+      "timestamp": "2026-10-24T05:11:04.154Z",
+      "confidence": null
+    },
+    {
+      "step": "decide",
+      "agent": "decide",
+      "model": null,
+      "action": "proposal",
+      "detail": "approve rules=['R1'] evidence=['E1']",
+      "timestamp": "2026-10-24T05:11:04.154Z",
+      "confidence": 1.0
+    },
+    {
+      "step": "critic",
+      "agent": "critic",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "review",
+      "detail": "Check proposal against evidence and checks",
+      "timestamp": "2026-10-24T05:11:49.177Z",
+      "confidence": null
+    },
+    {
+      "step": "critic",
+      "agent": "policy-verifier",
+      "model": null,
+      "action": "verify_claims",
+      "detail": "All cited evidence, rules, numbers and windows match the checks.",
+      "timestamp": "2026-10-24T05:11:49.177Z",
+      "confidence": null
+    },
+    {
+      "step": "critic",
+      "agent": "critic",
+      "model": null,
+      "action": "verdict",
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"All factual claims in the proposal are supported by evidence (E1 for order/delivery/total/final_sale, E2/E3 for refund history and policy R1/R9) and agree with the Python checks: changed_mind, days_since_delivery 25 within R1's 30-day window, order_total $139.00 under the $200.00 auto-approve limit, final_sale false, already_refunded false, approved_refunds_last_90_days 0, no conflicting rule applies.\", \"decision\": \"approve\", \"revise_target\": null}",
+      "timestamp": "2026-10-24T05:11:49.177Z",
+      "confidence": 1.0
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "write",
+      "detail": "Write customer reply and explanation",
+      "timestamp": "2026-10-24T05:12:44.839Z",
+      "confidence": null
+    },
+    {
+      "step": "reporter",
+      "agent": "final-reviewer",
+      "model": null,
+      "action": "review",
+      "detail": "Explanation step 3 cites 'E2,E3', which is not an evidence id (E1, E2, E3).",
+      "timestamp": "2026-10-24T05:12:44.839Z",
+      "confidence": null
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "write",
+      "detail": "Revise reply after review",
+      "timestamp": "2026-10-24T05:13:42.480Z",
+      "confidence": null
+    },
+    {
+      "step": "reporter",
+      "agent": "final-reviewer",
+      "model": null,
+      "action": "re-review",
+      "detail": "Revised reply passes review.",
+      "timestamp": "2026-10-24T05:13:42.480Z",
+      "confidence": null
+    },
+    {
+      "step": "reporter",
+      "agent": "reporter",
+      "model": null,
+      "action": "reply",
+      "detail": "{\"decision\": \"approve\", \"steps\": [{\"step\": \"Confirm order ORD-1035 details and delivery date.\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1035 for the Air Fryer was delivered on 2026-09-30 with a total of $139.00, is not marked final sale, and belongs to customer C001 (E1).\"}, {\"step\": \"Check days since delivery against the 30-day changed-mind return window.\", \"evidence_id\": \"E1\", \"detail\": \"It has been 25 days since delivery (delivered 2026-09-30, today 2026-10-25), which is within the 30-day window (E1).\"}, {\"step\": \"Verify refund history and eligibility for this order.\", \"evidence_id\": \"E2\", \"detail\": \"Order ORD-1035 has not already been refunded, and the customer has 0 approved refunds in the last 90 days (E2).\"}, {\"step\": \"Check the order total against the auto-approval limit and apply policy R1.\", \"evidence_id\": \"E3\", \"detail\": \"The order total is $139.00, under the $200.00 auto-approve limit; policy R1 approves unused items returned within 30 days of delivery, and no conflicting rule applies (E3).\"}, {\"step\": \"Final decision: approve the refund.\", \"evidence_id\": \"E3\", \"detail\": \"All eligibility checks pass, so the refund is approved with confidence 1.0 (E3).\"}]}",
+      "timestamp": "2026-10-24T05:13:42.480Z",
+      "confidence": null
+    },
+    {
+      "step": "orchestrator",
+      "agent": "orchestrator",
+      "model": null,
+      "action": "done",
+      "detail": "decision=approve confidence=1.0 model_calls=7/12",
+      "timestamp": "2026-10-24T05:13:42.480Z",
+      "confidence": null
+    }
+  ],
+  "model_calls": 7,
+  "scout": {
+    "intent": "refund.request",
+    "score": 1,
+    "band": "high",
+    "risk": {
+      "level": "medium",
+      "flags": [],
+      "redactions": [],
+      "approvals": []
+    },
+    "parameters": {
+      "order_id": "ORD-1035",
+      "reason_type": "changed_mind"
+    },
+    "toolPlan": [
+      "order.lookup -> zetaris.run_sql",
+      "refund.history -> zetaris.run_sql",
+      "policy.lookup -> zetaris.run_sql",
+      "policy.check -> refundwise.checks",
+      "agent.review -> refundwise.multi_agent",
+      "reply.compose -> refundwise.reporter"
+    ],
+    "modelProfile": "nemotron-lightning",
+    "contractId": "01M5P520YWJNWRS36FRKT7WQVG",
+    "clarification": null,
+    "latencyMs": 5.3438
+  },
+  "explanation": [
+    {
+      "step": "Confirm order ORD-1035 details and delivery date.",
+      "evidence_id": "E1",
+      "detail": "Order ORD-1035 for the Air Fryer was delivered on 2026-09-30 with a total of $139.00, is not marked final sale, and belongs to customer C001 (E1)."
+    },
+    {
+      "step": "Check days since delivery against the 30-day changed-mind return window.",
+      "evidence_id": "E1",
+      "detail": "It has been 25 days since delivery (delivered 2026-09-30, today 2026-10-25), which is within the 30-day window (E1)."
+    },
+    {
+      "step": "Verify refund history and eligibility for this order.",
+      "evidence_id": "E2",
+      "detail": "Order ORD-1035 has not already been refunded, and the customer has 0 approved refunds in the last 90 days (E2)."
+    },
+    {
+      "step": "Check the order total against the auto-approval limit and apply policy R1.",
+      "evidence_id": "E3",
+      "detail": "The order total is $139.00, under the $200.00 auto-approve limit; policy R1 approves unused items returned within 30 days of delivery, and no conflicting rule applies (E3)."
+    },
+    {
+      "step": "Final decision: approve the refund.",
+      "evidence_id": "E3",
+      "detail": "All eligibility checks pass, so the refund is approved with confidence 1.0 (E3)."
+    }
+  ],
+  "trace_id": "trace-20261024-051011-87a341",
+  "request_id": "E4",
+  "log_path": "logs/trace-20261024-051011-87a341.jsonl"
+}

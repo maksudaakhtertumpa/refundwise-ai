@@ -26,6 +26,20 @@ _TWO_PLACES = Decimal("0.01")
 
 
 def run_sql(sql: str, limit: int = 100) -> dict:
+    """Execute read-only SQL; if the data mart is missing on this Zetaris, retry on the source tables."""
+    result = _run_sql_once(sql, limit)
+    lower = (sql or "").lower()
+    if not result.get("ok") and not result.get("refused") and (USL in lower or DATA_MART + "." in lower):
+        fallback = _run_sql_once(to_source_tables(sql), limit)
+        if fallback.get("ok"):
+            fallback["note"] = f"semantic layer unavailable ({str(result.get('error'))[:120]}); read the source tables directly"
+            fallback["sql"] = sql
+            fallback["executed_sql"] = to_source_tables(sql)
+            return fallback
+    return result
+
+
+def _run_sql_once(sql: str, limit: int = 100) -> dict:
     """Execute a read-only SQL statement through Zetaris.
 
     Returns {"ok", "sql", "columns", "rows", "error"} and, when a JSON
@@ -42,6 +56,7 @@ def run_sql(sql: str, limit: int = 100) -> dict:
     safe_error = _safety_error(sql)
     if safe_error:
         result["error"] = safe_error
+        result["refused"] = True
         return result
 
     if (os.getenv("SAMPLE_MODE") or "").strip().lower() in {"1", "true", "yes"}:
@@ -104,11 +119,29 @@ _WRITE_WORDS = re.compile(
     r"\b(insert|update|delete|drop|create|alter|truncate|grant|revoke|merge|register|cache|uncache|refresh|set)\b",
     re.IGNORECASE,
 )
-_TABLE_REF = re.compile(r"\b(?:from|join)\s+([a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*)", re.IGNORECASE)
-# The only Zetaris tables RefundWise may read.
-ALLOWED_TABLES = frozenset(
-    {"shop_orders.orders", "support_desk.customers", "support_desk.refund_history", "policy_kb.refund_policy"}
-)
+_TABLE_REF = re.compile(r"\b(?:from|join)\s+([a-z_][a-z0-9_]*(?:\.[a-z_][a-z0-9_]*)+)", re.IGNORECASE)
+# RefundWise reads through the Zetaris Unified Semantic Layer "refundwise_usl" (see data/zetaris_semantic_layer.sql):
+# one typed model with primary and foreign keys over the three source systems, without the customers' email.
+# The virtual data mart "refundwise_mart" curates the same four tables for people browsing the data.
+USL = "lightning.metastore.refundwise.refundwise_usl"
+DATA_MART = "refundwise_mart"
+SOURCES = {
+    "orders": "shop_orders.orders",
+    "customers": "support_desk.customers",
+    "refund_history": "support_desk.refund_history",
+    "refund_policy": "policy_kb.refund_policy",
+}
+LAYER_TO_SOURCE = {f"{layer}.{t}": src for t, src in SOURCES.items() for layer in (USL, DATA_MART)}
+MART_TO_SOURCE = {k: v for k, v in LAYER_TO_SOURCE.items() if k.startswith(DATA_MART + ".")}
+# The only Zetaris tables RefundWise may read: the semantic layer, the data mart, or the sources behind them.
+ALLOWED_TABLES = frozenset(LAYER_TO_SOURCE) | frozenset(SOURCES.values())
+
+
+def to_source_tables(sql: str) -> str:
+    """Rewrite semantic-layer and data-mart table names to the source tables (fallback and SAMPLE_MODE)."""
+    for name in sorted(LAYER_TO_SOURCE, key=len, reverse=True):
+        sql = re.sub(rf"(?<![\w.]){re.escape(name)}\b", LAYER_TO_SOURCE[name], sql, flags=re.IGNORECASE)
+    return sql
 
 
 def _strip_literals(sql: str) -> str:
@@ -313,18 +346,18 @@ def _sample_db():
     con = sqlite3.connect(":memory:")
     for path in sorted((_ROOT / "data" / "sample").glob("*__*.csv")):
         source, table = path.stem.split("__", 1)
-        if source not in {r[1] for r in con.execute("PRAGMA database_list")}:
-            con.execute(f"ATTACH DATABASE ':memory:' AS {source}")
         with path.open(newline="") as fh:
             reader = csv.reader(fh)
             header = next(reader)
-            cols = ", ".join(f'"{c}" TEXT' for c in header)
-            con.execute(f"CREATE TABLE {source}.{table} ({cols})")
-            marks = ", ".join("?" for _ in header)
-            con.executemany(
-                f"INSERT INTO {source}.{table} VALUES ({marks})",
-                ([v if v != "" else None for v in row] for row in reader),
-            )
+            rows = [[v if v != "" else None for v in row] for row in reader]
+        cols = ", ".join(f'"{c}" TEXT' for c in header)
+        marks = ", ".join("?" for _ in header)
+        # Load each table under its source system and under the data mart, like Zetaris exposes it.
+        for schema in (source, DATA_MART):
+            if schema not in {r[1] for r in con.execute("PRAGMA database_list")}:
+                con.execute(f"ATTACH DATABASE ':memory:' AS {schema}")
+            con.execute(f"CREATE TABLE {schema}.{table} ({cols})")
+            con.executemany(f"INSERT INTO {schema}.{table} VALUES ({marks})", rows)
     _SAMPLE_DB = con
     return con
 
@@ -334,7 +367,8 @@ def _run_sample(sql: str, limit: int, result: dict) -> dict:
     import sqlite3
 
     try:
-        cur = _sample_db().execute(sql)
+        # SQLite has no 5-part names: serve semantic-layer names from the same CSV-backed source tables.
+        cur = _sample_db().execute(to_source_tables(sql) if USL in sql.lower() else sql)
         columns = [d[0] for d in cur.description or []]
         rows = [dict(zip(columns, r)) for r in cur.fetchmany(limit)]
     except sqlite3.Error as exc:
