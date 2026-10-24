@@ -9,7 +9,7 @@
     {
       "id": "E1",
       "source": "lightning.metastore.refundwise.refundwise_usl.orders",
-      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE customer_id = 'C004' AND order_id = 'ORD-1070'",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE order_id = 'ORD-1070' AND customer_id = 'C004'",
       "rows": [
         {
           "order_id": "ORD-1070",
@@ -38,8 +38,17 @@
     {
       "id": "E3",
       "source": "lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy WHERE category = 'Electronics'",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy WHERE category = 'Electronics' OR category = 'ALL'",
       "rows": [
+        {
+          "rule_id": "R1",
+          "category": "ALL",
+          "reason_type": "changed_mind",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Unused items may be returned for a full refund within 30 days of delivery."
+        },
         {
           "rule_id": "R2",
           "category": "Electronics",
@@ -48,6 +57,69 @@
           "auto_approve_limit": "200.00",
           "outcome": "approve",
           "rule_text": "Electronics change-of-mind returns are accepted only within 15 days of delivery and must be unopened."
+        },
+        {
+          "rule_id": "R3",
+          "category": "ALL",
+          "reason_type": "defective",
+          "window_days": "30",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "Items that arrive damaged or defective are refunded in full within 30 days of delivery; a photo is requested."
+        },
+        {
+          "rule_id": "R4",
+          "category": "ALL",
+          "reason_type": "not_received",
+          "window_days": "14",
+          "auto_approve_limit": "200.00",
+          "outcome": "approve",
+          "rule_text": "If an order has not been delivered 14 days after the order date, the customer may choose a refund or a replacement."
+        },
+        {
+          "rule_id": "R5",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0.00",
+          "outcome": "reject",
+          "rule_text": "Items marked final sale cannot be refunded unless they are defective."
+        },
+        {
+          "rule_id": "R7",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "200.00",
+          "outcome": "human_review",
+          "rule_text": "Any refund above 200.00 must be reviewed by a support lead before approval."
+        },
+        {
+          "rule_id": "R8",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "90",
+          "auto_approve_limit": "0.00",
+          "outcome": "human_review",
+          "rule_text": "Customers with 3 or more refunds in the last 90 days are sent to human review to check for abuse."
+        },
+        {
+          "rule_id": "R9",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0.00",
+          "outcome": "reject",
+          "rule_text": "An order can be refunded only once. Requests for an order that was already refunded are rejected."
+        },
+        {
+          "rule_id": "R10",
+          "category": "ALL",
+          "reason_type": "any",
+          "window_days": "0",
+          "auto_approve_limit": "0.00",
+          "outcome": "human_review",
+          "rule_text": "When the customer's claim conflicts with order or carrier records, the case goes to human review."
         }
       ],
       "note": "lightning.metastore.refundwise.refundwise_usl.refund_policy"
@@ -74,11 +146,10 @@
     "rules_applied": [
       "R10"
     ],
-    "confidence": 0.95,
-    "rationale": "Customer claims not_received, but checks confirm delivered=true and order_status=delivered (E1). This direct conflict triggers R10 human_review. The order is 11 days since order_date (2026-10-14), below the 14-day R4 window, so R4 does not apply. No prior approved refunds (E2).",
+    "confidence": 1.0,
+    "rationale": "The customer states ORD-1070 never arrived, but E1 records the order as delivered on 2026-10-17, only 11 days after the 2026-10-14 order date. Because the not_received claim conflicts with the order record showing delivery, R10 routes this to human review. R4 does not apply since the item was delivered and fewer than 14 days have passed since the order date.",
     "evidence_ids": [
-      "E1",
-      "E2"
+      "E1"
     ]
   },
   "critique": {
@@ -93,14 +164,13 @@
     }
   },
   "decision": "human_review",
-  "confidence": 0.95,
+  "confidence": 1.0,
   "rules_applied": [
     "R10"
   ],
-  "customer_reply": "Thank you for contacting us about your Bluetooth speaker, order ORD-1070. Our records indicate this order was delivered on October 17, 2026, and is marked as delivered. Because your report differs from our delivery records, we have escalated this case for a manual review. A team member will follow up with you shortly.",
+  "customer_reply": "Thank you for writing in. A support lead will review this request and contact you shortly.",
   "limitations": [
-    "Could not independently verify carrier proof of delivery or whether the package was physically received by the customer.",
-    "Could not determine if the delivery was made to the correct address or if the package was lost after carrier handoff."
+    "Automated reply; reporter model did not return JSON."
   ],
   "trace": [
     {
@@ -108,8 +178,8 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"order.not-received\", \"score\": 0.9347, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PDCYN0BAAGDX99F4X3W3CN\", \"latencyMs\": 5.8007}",
-      "timestamp": "2026-10-24T07:35:57.862Z",
+      "detail": "{\"intent\": \"order.not-received\", \"score\": 0.9347, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PJCHKD060H76JP2ST49AMM\", \"latencyMs\": 10.0496}",
+      "timestamp": "2026-10-24T09:03:07.385Z",
       "confidence": null
     },
     {
@@ -118,7 +188,7 @@
       "model": null,
       "action": "contract.verified",
       "detail": "agent.review: ok",
-      "timestamp": "2026-10-24T07:35:57.862Z",
+      "timestamp": "2026-10-24T09:03:07.385Z",
       "confidence": null
     },
     {
@@ -127,7 +197,7 @@
       "model": null,
       "action": "skipped",
       "detail": "Scout contract already bound order_id=ORD-1070 reason_type=not_received",
-      "timestamp": "2026-10-24T07:35:57.862Z",
+      "timestamp": "2026-10-24T09:03:07.385Z",
       "confidence": null
     },
     {
@@ -136,7 +206,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T07:35:59.283Z",
+      "timestamp": "2026-10-24T09:03:09.323Z",
       "confidence": null
     },
     {
@@ -145,7 +215,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E1 ok=True source=lightning.metastore.refundwise.refundwise_usl.orders",
-      "timestamp": "2026-10-24T07:35:59.808Z",
+      "timestamp": "2026-10-24T09:03:09.780Z",
       "confidence": null
     },
     {
@@ -154,7 +224,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T07:36:00.774Z",
+      "timestamp": "2026-10-24T09:03:10.552Z",
       "confidence": null
     },
     {
@@ -163,16 +233,16 @@
       "model": null,
       "action": "run_sql",
       "detail": "E2 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_history",
-      "timestamp": "2026-10-24T07:36:01.027Z",
+      "timestamp": "2026-10-24T09:03:10.757Z",
       "confidence": null
     },
     {
       "step": "evidence",
       "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T07:36:02.468Z",
+      "timestamp": "2026-10-24T09:03:11.718Z",
       "confidence": null
     },
     {
@@ -181,7 +251,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E3 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "timestamp": "2026-10-24T07:36:02.729Z",
+      "timestamp": "2026-10-24T09:03:11.967Z",
       "confidence": null
     },
     {
@@ -190,7 +260,7 @@
       "model": null,
       "action": "compute",
       "detail": "{'days_since_delivery': 8, 'days_since_order': 11, 'delivered': True, 'order_total': 69.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-10-17', 'order_date': '2026-10-14', 'order_found': True, 'order_belongs_to_customer': True}",
-      "timestamp": "2026-10-24T07:36:02.729Z",
+      "timestamp": "2026-10-24T09:03:11.967Z",
       "confidence": null
     },
     {
@@ -199,7 +269,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "propose",
       "detail": "Propose decision from checks and policy",
-      "timestamp": "2026-10-24T07:36:50.707Z",
+      "timestamp": "2026-10-24T09:03:57.015Z",
       "confidence": null
     },
     {
@@ -207,9 +277,9 @@
       "agent": "decide",
       "model": null,
       "action": "proposal",
-      "detail": "human_review rules=['R10'] evidence=['E1', 'E2']",
-      "timestamp": "2026-10-24T07:36:50.707Z",
-      "confidence": 0.95
+      "detail": "human_review rules=['R10'] evidence=['E1']",
+      "timestamp": "2026-10-24T09:03:57.016Z",
+      "confidence": 1.0
     },
     {
       "step": "critic",
@@ -217,7 +287,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "review",
       "detail": "Check proposal against evidence and checks",
-      "timestamp": "2026-10-24T07:37:35.735Z",
+      "timestamp": "2026-10-24T09:04:42.052Z",
       "confidence": null
     },
     {
@@ -225,8 +295,8 @@
       "agent": "policy-verifier",
       "model": null,
       "action": "verify_claims",
-      "detail": "Cites rule R10, which is not in the policy table.; Rationale says '14-day', which matches no check (delivery 8 days, order 11 days).",
-      "timestamp": "2026-10-24T07:37:35.735Z",
+      "detail": "All cited evidence, rules, numbers and windows match the checks.",
+      "timestamp": "2026-10-24T09:04:42.052Z",
       "confidence": null
     },
     {
@@ -235,8 +305,8 @@
       "model": null,
       "action": "verdict",
       "detail": "{\"verdict\": \"accept\", \"reason\": \"Customer claims not received but records show delivered.\", \"decision\": \"human_review\", \"revise_target\": null}",
-      "timestamp": "2026-10-24T07:37:35.736Z",
-      "confidence": 0.95
+      "timestamp": "2026-10-24T09:04:42.052Z",
+      "confidence": 1.0
     },
     {
       "step": "reporter",
@@ -244,16 +314,16 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "write",
       "detail": "Write customer reply and explanation",
-      "timestamp": "2026-10-24T07:38:20.764Z",
+      "timestamp": "2026-10-24T09:05:27.098Z",
       "confidence": null
     },
     {
       "step": "reporter",
-      "agent": "final-reviewer",
+      "agent": "reporter",
       "model": null,
-      "action": "review",
-      "detail": "Every explanation step cites real evidence and the reply matches the decision.",
-      "timestamp": "2026-10-24T07:38:20.765Z",
+      "action": "fallback_text",
+      "detail": "Used template reply after invalid JSON",
+      "timestamp": "2026-10-24T09:05:27.099Z",
       "confidence": null
     },
     {
@@ -261,8 +331,8 @@
       "agent": "reporter",
       "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"Verified order ORD-1070 for customer C004\", \"evidence_id\": \"E1\", \"detail\": \"Order shows a Bluetooth Speaker (Electronics) ordered 2026-10-14, delivered 2026-10-17, status delivered, order total $69.00, not final sale.\"}, {\"step\": \"Checked refund history for customer C004\", \"evidence_id\": \"E2\", \"detail\": \"No prior approved refunds found in the last 90 days.\"}, {\"step\": \"Compared customer claim with order records\", \"evidence_id\": \"E1\", \"detail\": \"Customer states the item never arrived, but records show delivered=true and order_status=delivered; this conflict triggers human review under policy R10.\"}, {\"step\": \"Confirmed timing and eligibility\", \"evidence_id\": \"E1\", \"detail\": \"Order is 11 days since order date, within the standard review window; no other automatic refund rules apply.\"}]}",
-      "timestamp": "2026-10-24T07:38:20.765Z",
+      "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"lightning.metastore.refundwise.refundwise_usl.orders\", \"evidence_id\": \"E1\", \"detail\": \"lightning.metastore.refundwise.refundwise_usl.orders\"}, {\"step\": \"lightning.metastore.refundwise.refundwise_usl.refund_history\", \"evidence_id\": \"E2\", \"detail\": \"lightning.metastore.refundwise.refundwise_usl.refund_history\"}, {\"step\": \"lightning.metastore.refundwise.refundwise_usl.refund_policy\", \"evidence_id\": \"E3\", \"detail\": \"lightning.metastore.refundwise.refundwise_usl.refund_policy\"}]}",
+      "timestamp": "2026-10-24T09:05:27.099Z",
       "confidence": null
     },
     {
@@ -270,8 +340,8 @@
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=human_review confidence=0.95 model_calls=6/12",
-      "timestamp": "2026-10-24T07:38:20.765Z",
+      "detail": "decision=human_review confidence=1.0 model_calls=6/12",
+      "timestamp": "2026-10-24T09:05:27.099Z",
       "confidence": null
     }
   ],
@@ -299,33 +369,28 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5PDCYN0BAAGDX99F4X3W3CN",
+    "contractId": "01M5PJCHKD060H76JP2ST49AMM",
     "clarification": null,
-    "latencyMs": 5.8007
+    "latencyMs": 10.0496
   },
   "explanation": [
     {
-      "step": "Verified order ORD-1070 for customer C004",
+      "step": "lightning.metastore.refundwise.refundwise_usl.orders",
       "evidence_id": "E1",
-      "detail": "Order shows a Bluetooth Speaker (Electronics) ordered 2026-10-14, delivered 2026-10-17, status delivered, order total $69.00, not final sale."
+      "detail": "lightning.metastore.refundwise.refundwise_usl.orders"
     },
     {
-      "step": "Checked refund history for customer C004",
+      "step": "lightning.metastore.refundwise.refundwise_usl.refund_history",
       "evidence_id": "E2",
-      "detail": "No prior approved refunds found in the last 90 days."
+      "detail": "lightning.metastore.refundwise.refundwise_usl.refund_history"
     },
     {
-      "step": "Compared customer claim with order records",
-      "evidence_id": "E1",
-      "detail": "Customer states the item never arrived, but records show delivered=true and order_status=delivered; this conflict triggers human review under policy R10."
-    },
-    {
-      "step": "Confirmed timing and eligibility",
-      "evidence_id": "E1",
-      "detail": "Order is 11 days since order date, within the standard review window; no other automatic refund rules apply."
+      "step": "lightning.metastore.refundwise.refundwise_usl.refund_policy",
+      "evidence_id": "E3",
+      "detail": "lightning.metastore.refundwise.refundwise_usl.refund_policy"
     }
   ],
-  "trace_id": "trace-20261024-073557-c29f05",
+  "trace_id": "trace-20261024-090307-ec331a",
   "request_id": "S8",
-  "log_path": "logs/trace-20261024-073557-c29f05.jsonl"
+  "log_path": "logs/trace-20261024-090307-ec331a.jsonl"
 }

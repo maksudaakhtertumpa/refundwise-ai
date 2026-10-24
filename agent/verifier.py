@@ -24,6 +24,12 @@ _MONEY = re.compile(r"(?:\$\s?|\b)(\d{1,3}(?:,\d{3})*\.\d{2})\b")
 _GUARD_RULES = {"R7", "R8", "R9", "R10"}
 # Policy windows from the refund policy (R1 30, R2 15, R3 30, R4 14, R8 90 days).
 _POLICY_WINDOWS = {14, 15, 30, 90}
+_MONEY_ANY = re.compile(r"(?:\$|RM|USD)\s?(\d+(?:,\d{3})*(?:\.\d{1,2})?)", re.I)
+# A promise to the customer, not a quote of the policy ("items may be returned for a full refund ...").
+_GRANT = re.compile(r"\b(we(?:'ll| will| are going to| have| are)\s+(?:\w+\s+){0,2}refund(?:ing|ed)?|you(?:'ll| will) (?:receive|get) (?:a |your |the )?(?:full )?refund|(?:your |the )?refund (?:has been|will be|is) (?:approved|processed|issued|on its way))\b", re.I)
+_NEGATION = re.compile(r"\b(not|cannot|can't|unable|won't|no longer|isn't|aren't|don't|doesn't)\b", re.I)
+_DENIES = re.compile(r"\b(unable to (?:offer|issue|provide) a refund|cannot (?:offer|issue) a refund|not eligible for a refund|can't refund)\b", re.I)
+_PAYMENT_PROMISE = re.compile(r"\b(business days|will be credited|has been credited|refund has been issued|has been refunded|within \d+\s*(?:-|to)\s*\d+ days)\b", re.I)
 _APPROVED_WORDS = re.compile(r"\b(has been approved|is approved|approved a (?:full )?refund|we(?:'ve| have) approved|refund has been issued)\b", re.I)
 
 
@@ -75,6 +81,14 @@ def verify_proposal(case: CaseFile) -> list[str]:
             issues.append("Approves a final-sale item that is not defective (R5 says reject).")
         if category == "Digital" and checks.get("delivered") and reason != "defective":
             issues.append("Approves a delivered digital product that is not faulty (R6 says reject).")
+        if reason in {"changed_mind", "defective"} and days_delivery is None:
+            issues.append("Approves without a delivery date, so the policy window cannot be checked; this needs human review.")
+        if reason == "not_received":
+            days_order = checks.get("days_since_order")
+            if days_order is None:
+                issues.append("Approves 'not received' without an order date; R4 cannot be checked.")
+            elif days_order < 14:
+                issues.append(f"Approves 'not received' only {days_order} days after ordering; R4 requires 14 days.")
         if reason == "changed_mind" and days_delivery is not None:
             window = 15 if category == "Electronics" else 30
             if days_delivery > window:
@@ -121,6 +135,40 @@ def review_report(case: CaseFile, payload: dict) -> list[str]:
         if case.evidence and (not eid or eid not in evidence_ids):
             issues.append(f"Explanation step {i} cites '{eid}', which is not an evidence id ({', '.join(sorted(evidence_ids))}).")
     reply = str(payload.get("customer_reply") or "")
-    if case.decision in {"reject", "human_review"} and _APPROVED_WORDS.search(reply):
-        issues.append(f"The reply tells the customer the refund is approved, but the decision is {case.decision}.")
-    return issues
+    if case.decision in {"reject", "human_review"} and (_APPROVED_WORDS.search(reply) or _grants_refund(reply)):
+        issues.append(f"Reply: it tells the customer they will be refunded, but the decision is {case.decision}.")
+    if case.decision == "approve" and _DENIES.search(reply):
+        issues.append("Reply: it tells the customer the refund is refused, but the decision is approve.")
+    if _PAYMENT_PROMISE.search(reply):
+        issues.append("Reply: it promises payment timing or completion; RefundWise only decides, payment is processed separately.")
+    allowed = _allowed_money(case)
+    texts = [reply] + [str(s.get("detail") or "") + " " + str(s.get("step") or "") for s in steps if isinstance(s, dict)]
+    for text in texts:
+        for match in _MONEY_ANY.finditer(text):
+            value = _num(match.group(1))
+            if value is not None and round(value, 2) not in allowed:
+                issues.append(f"Mentions {match.group(0).strip()}, which is not an amount in the evidence.")
+    return list(dict.fromkeys(issues))
+
+
+def _allowed_money(case: CaseFile) -> set:
+    allowed = {200.0, 0.0}
+    total = _num((case.checks or {}).get("order_total"))
+    if total is not None:
+        allowed.add(round(total, 2))
+    for item in case.evidence:
+        for row in item.rows or []:
+            values = row.values() if isinstance(row, dict) else (row if isinstance(row, (list, tuple)) else [])
+            for v in values:
+                n = _num(v)
+                if n is not None:
+                    allowed.add(round(n, 2))
+    return allowed
+
+
+def _grants_refund(text: str) -> bool:
+    """True if a sentence promises a refund without a negation."""
+    for sentence in re.split(r"(?<=[.!?])\s+", text):
+        if _GRANT.search(sentence) and not _NEGATION.search(sentence):
+            return True
+    return False

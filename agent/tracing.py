@@ -30,6 +30,8 @@ _STATUS = {
     "skipped": "skipped",
     "revise": "needs_revision",
     "repair": "repaired",
+    "scope_filter": "refused",
+    "approval_gate": "blocked",
 }
 
 

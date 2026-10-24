@@ -1,0 +1,50 @@
+{
+  "request_id": "example-003",
+  "trace_id": "trace-20261024-092624-04213b",
+  "status": "success",
+  "route": "policy.question",
+  "agents_used": [
+    "scout-intent",
+    "orchestrator"
+  ],
+  "result": {
+    "decision": "refused",
+    "confidence": 1.0,
+    "rules_applied": [],
+    "customer_reply": "We can't process this message. If you need help with an order, please describe the problem and include your order number.",
+    "explanation": [],
+    "limitations": [
+      "Blocked by Scout Intent guard: Possible prompt injection (instruction-override)"
+    ]
+  },
+  "evidence": [],
+  "collaboration": {
+    "feedback_loop_completed": false,
+    "critic_verdict": null,
+    "critic_reason": null,
+    "revision_count": 0
+  },
+  "scout": {
+    "intent": "policy.question",
+    "score": 0.8976,
+    "band": "high",
+    "risk": {
+      "level": "block",
+      "flags": [
+        "injection"
+      ],
+      "redactions": [],
+      "approvals": [],
+      "reason": "Possible prompt injection (instruction-override)"
+    },
+    "parameters": {},
+    "toolPlan": [],
+    "modelProfile": null,
+    "contractId": null,
+    "clarification": null,
+    "latencyMs": 2.1317
+  },
+  "model_calls": 0,
+  "models_used": {},
+  "log_path": "logs/trace-20261024-092624-04213b.jsonl"
+}

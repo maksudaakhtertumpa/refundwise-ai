@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from agent.parse import message_text
 from agent.runtime import tracked_chat
 from agent.state import CaseFile
-from agent.tools_zetaris import run_sql
+from agent.tools_zetaris import _strip_literals, run_sql
 
 MAX_TOOL_CALLS = 5
 
@@ -66,6 +67,29 @@ def gather_evidence(case: CaseFile, extra_request: str | None = None) -> None:
     missing = _missing_buckets(case)
     if sql_failed or missing:
         _run_fallbacks(case, reason="sql_failed" if sql_failed else "missing " + ",".join(missing))
+    _complete_policy(case)
+
+
+_POLICY_TABLE = "lightning.metastore.refundwise.refundwise_usl.refund_policy"
+
+
+def _complete_policy(case: CaseFile) -> None:
+    """Make sure the rules that apply to every category ('ALL') are in the evidence.
+
+    The model sometimes asks only for its category's rules; then R1, R3 or R7-R10 would be
+    missing and the verifier could not check them. The policy table holds no customer data,
+    so it is safe to read in full.
+    """
+    rows = [r for item in case.evidence if item.source == _POLICY_TABLE for r in (item.rows or []) if isinstance(r, dict)]
+    if any(str(r.get("category") or "").upper() == "ALL" for r in rows):
+        return
+    sql = ("SELECT rule_id, category, reason_type, window_days, auto_approve_limit, outcome, rule_text "
+           f"FROM {_POLICY_TABLE}")
+    payload = run_sql(sql)
+    item = case.add_evidence(source=_POLICY_TABLE, sql=sql, rows=payload.get("rows") or [],
+                             note="complete refund policy (the 'ALL' rules were missing)")
+    case.add_trace(step="evidence", agent="evidence", action="policy_complete",
+                   detail=f"{item.id} {_POLICY_TABLE} ok={payload.get('ok')} (added the rules that apply to all categories)")
 
 
 def _tool_loop(case: CaseFile, extra_request: str | None) -> bool:
@@ -105,6 +129,12 @@ def _tool_loop(case: CaseFile, extra_request: str | None) -> bool:
                 payload = run_sql(sql, limit=limit)
             else:
                 payload = {"ok": False, "sql": sql, "rows": [], "error": "Missing sql argument"}
+            if payload.get("ok"):
+                kept, removed = enforce_customer_rows(payload.get("rows") or [], infer_source(sql), case.customer_id)
+                if removed:
+                    payload = {**payload, "rows": kept}
+                    case.add_trace(step="evidence", agent="evidence", action="scope_filter",
+                                   detail=f"removed {removed} row(s) not belonging to {case.customer_id} (or without customer_id)")
             if not payload.get("ok"):
                 sql_failed = True
             item = case.add_evidence(
@@ -229,12 +259,27 @@ def scope_error_for(sql: str, customer_id: str) -> str | None:
     table (names, emails) is not needed for a refund decision and is not exposed.
     """
     lower = (sql or "").lower()
-    if "lightning.metastore.refundwise.refundwise_usl.customers" in lower:
+    if "lightning.metastore.refundwise.refundwise_usl.customers" in lower or "support_desk.customers" in lower:
         return "Query refused: the customers table is not needed for refund evidence"
     if any(t in lower for t in _CUSTOMER_SCOPED):
         if "customer_id" not in lower or f"'{customer_id.lower()}'" not in lower:
             return f"Query refused: filter by customer_id = '{customer_id}'"
+        bare = _strip_literals(lower)
+        if re.search(r"\b(or|union|intersect|except)\b", bare) or bare.count("select") > 1:
+            return "Query refused: customer-scoped queries may not use OR, UNION or subqueries"
     return None
+
+
+def enforce_customer_rows(rows: list, source: str, customer_id: str) -> tuple[list, int]:
+    """Keep only this customer's rows from a customer-scoped table (the real isolation guarantee).
+
+    Returns (kept_rows, removed_count). Rows without a customer_id column are removed,
+    because their owner cannot be checked.
+    """
+    if source not in _CUSTOMER_SCOPED:
+        return rows, 0
+    kept = [r for r in rows or [] if isinstance(r, dict) and str(r.get("customer_id") or "").upper() == customer_id.upper()]
+    return kept, len(rows or []) - len(kept)
 
 
 def _sql_literal(value: str) -> str:

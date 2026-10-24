@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 from agent.parse import extract_json_object, message_text
 from agent.runtime import tracked_chat
@@ -20,7 +21,9 @@ Reply with a single JSON object:
   ],
   "limitations": ["anything we could not verify"]
 }
-Every explanation step should include an evidence id when one exists.
+Every explanation step should include exactly one evidence id when one exists.
+Only mention amounts that appear in the evidence. Do not promise payment timing or say money
+has been sent: RefundWise decides, and the refund is processed separately.
 """
 
 
@@ -33,7 +36,8 @@ def write_report(case: CaseFile) -> None:
             step="reporter",
             agent="final-reviewer",
             action="review",
-            detail="; ".join(issues) if issues else "Every explanation step cites real evidence and the reply matches the decision.",
+            detail=("; ".join(issues) + f" | rejected reply: {str(payload.get('customer_reply'))[:200]}")
+            if issues else "Every explanation step cites real evidence and the reply matches the decision.",
         )
         if issues:
             revised = _ask(case, feedback=issues)
@@ -78,9 +82,11 @@ def write_report(case: CaseFile) -> None:
 def _repair(case: CaseFile, payload: dict, issues: list[str]) -> dict:
     """Keep only steps that cite real evidence; use the template reply if it contradicts the decision."""
     ids = {item.id for item in case.evidence}
-    steps = [s for s in payload.get("explanation") or [] if isinstance(s, dict) and s.get("evidence_id") in ids]
+    bad = " ".join(i for i in issues if i.startswith("Mentions "))
+    steps = [s for s in payload.get("explanation") or [] if isinstance(s, dict) and s.get("evidence_id") in ids
+             and not any(tok in bad for tok in re.findall(r"\$\s?[\d.,]+", str(s.get("detail") or "")))]
     reply = payload.get("customer_reply")
-    if any("reply tells the customer" in i for i in issues):
+    if any(i.startswith("Reply:") for i in issues):
         reply = _fallback_report(case)["customer_reply"]
     case.add_trace(step="reporter", agent="final-reviewer", action="repair",
                    detail=f"kept {len(steps)} cited steps; template reply={reply != payload.get('customer_reply')}")
@@ -154,8 +160,8 @@ def _fallback_report(case: CaseFile) -> dict:
     decision = case.decision or "human_review"
     if decision == "approve":
         reply = (
-            "Thank you for writing in. We have approved a refund for this order "
-            "and you should see the credit after processing."
+            "Thank you for writing in. Your request meets our refund policy and is approved "
+            "for processing. You will get a confirmation once the refund is issued."
         )
     elif decision == "reject":
         reply = (

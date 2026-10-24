@@ -93,7 +93,7 @@ def render_decision(case: dict[str, Any]) -> None:
     if reasons:
         reason_text = escape_markdown_dollars(" ".join(dict.fromkeys(reasons)))
         st.markdown(f"**Why this decision:** {reason_text}")
-    st.caption(f"Confidence: {confidence_text}  |  Rules applied: {rules}")
+    st.caption(f"Confidence (uncalibrated): {confidence_text}  |  Rules applied: {rules}")
     reply = case.get("customer_reply") or "No customer reply was recorded."
     st.info(escape_markdown_dollars(reply))
 
@@ -275,7 +275,11 @@ def render_case(case: dict[str, Any]) -> None:
     }
     decision = case.get("decision") or "unknown"
     metrics = st.columns(4)
-    metrics[0].metric("Confidence", "Not scored" if confidence is None else f"{float(confidence):.0%}")
+    metrics[0].metric(
+        "Confidence (uncalibrated)",
+        "Not scored" if confidence is None else f"{float(confidence):.0%}",
+        help="Self-reported by the model or set by a policy guard. Not a measured probability of being correct.",
+    )
     metrics[1].metric("Model calls", case.get("model_calls", 0))
     metrics[2].metric("Evidence items", len(case.get("evidence") or []))
     latency = scout.get("latencyMs")

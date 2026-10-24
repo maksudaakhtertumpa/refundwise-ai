@@ -147,15 +147,16 @@
       "R6"
     ],
     "confidence": 0.95,
-    "rationale": "R6 states Digital products (licences, downloads) are non-refundable once delivered unless the product does not work. E1 confirms category Digital, delivered on 2026-10-18, order total $39.00. The customer's reason is changed_mind, not defective/not working.",
+    "rationale": "E1 confirms ORD-1066 is a Digital Photo Editing Software Licence delivered on 2026-10-18, order_total $39.00, final_sale false. The customer's reason is changed_mind, not that the product does not work. Per R6 in E3, digital products are non-refundable once delivered unless defective/not working, so this changed_mind request is rejected. E2 shows no prior refunds, and the total is under $200, so R7/R8 do not apply.",
     "evidence_ids": [
-      "E1"
+      "E1",
+      "E3"
     ]
   },
   "critique": {
     "verdict": "accept",
     "missing_evidence": "",
-    "reason": "E1 confirms ORD-1066 is Digital, delivered 2026-10-18, total $39.00, final_sale false; E2 shows no prior refunds. These match the Python checks. R6 (E3) rejects delivered digital licences for changed_mind unless defective. No check conflicts.",
+    "reason": "All factual claims are supported by E1 (ORD-1066: Digital, delivered 2026-10-18, total $39.00, final_sale false), E2 (no prior refunds), and E3 (R6: delivered digital products are non-refundable unless defective/not working). The Python checks agree (category Digital, delivered true, order_total 39.0, already_refunded false), and category-specific R6 correctly governs over the general changed_mind rule R1.",
     "issues": []
   },
   "decision": "reject",
@@ -163,7 +164,7 @@
   "rules_applied": [
     "R6"
   ],
-  "customer_reply": "We're sorry you no longer need the photo editing licence. Unfortunately, digital licences are non\u2011refundable once delivered unless the product is defective, so we can't process a refund for a change of mind.",
+  "customer_reply": "We understand you no longer need the photo editing licence from order ORD-1066. Unfortunately, once a digital licence has been delivered, our policy does not allow refunds for a change of mind.",
   "limitations": [
     "Could not verify actual product functionality beyond the customer's statement; no defect was reported."
   ],
@@ -173,8 +174,8 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"refund.request\", \"score\": 0.5799, \"band\": \"medium\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PD69X0T9CE8WSMY4JFAAJV\", \"latencyMs\": 8.8829}",
-      "timestamp": "2026-10-24T07:32:20.012Z",
+      "detail": "{\"intent\": \"refund.request\", \"score\": 0.5799, \"band\": \"medium\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PJ6MHWRX7MFKDZ3KYZQ6BA\", \"latencyMs\": 6.8573}",
+      "timestamp": "2026-10-24T08:59:53.797Z",
       "confidence": null
     },
     {
@@ -183,7 +184,7 @@
       "model": null,
       "action": "contract.verified",
       "detail": "agent.review: ok",
-      "timestamp": "2026-10-24T07:32:20.013Z",
+      "timestamp": "2026-10-24T08:59:53.797Z",
       "confidence": null
     },
     {
@@ -192,7 +193,7 @@
       "model": null,
       "action": "skipped",
       "detail": "Scout contract already bound order_id=ORD-1066 reason_type=changed_mind",
-      "timestamp": "2026-10-24T07:32:20.013Z",
+      "timestamp": "2026-10-24T08:59:53.797Z",
       "confidence": null
     },
     {
@@ -201,7 +202,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T07:32:24.234Z",
+      "timestamp": "2026-10-24T08:59:55.139Z",
       "confidence": null
     },
     {
@@ -210,16 +211,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E1 ok=True source=lightning.metastore.refundwise.refundwise_usl.orders",
-      "timestamp": "2026-10-24T07:32:25.125Z",
-      "confidence": null
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": null,
-      "action": "run_sql",
-      "detail": "E2 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_history",
-      "timestamp": "2026-10-24T07:32:26.051Z",
+      "timestamp": "2026-10-24T08:59:56.067Z",
       "confidence": null
     },
     {
@@ -228,7 +220,25 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T07:32:27.935Z",
+      "timestamp": "2026-10-24T08:59:57.177Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": null,
+      "action": "run_sql",
+      "detail": "E2 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_history",
+      "timestamp": "2026-10-24T08:59:57.728Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-24T08:59:58.589Z",
       "confidence": null
     },
     {
@@ -237,7 +247,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E3 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "timestamp": "2026-10-24T07:32:28.334Z",
+      "timestamp": "2026-10-24T08:59:58.828Z",
       "confidence": null
     },
     {
@@ -246,16 +256,16 @@
       "model": null,
       "action": "compute",
       "detail": "{'days_since_delivery': 7, 'days_since_order': 7, 'delivered': True, 'order_total': 39.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Digital', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-10-18', 'order_date': '2026-10-18', 'order_found': True, 'order_belongs_to_customer': True}",
-      "timestamp": "2026-10-24T07:32:28.335Z",
+      "timestamp": "2026-10-24T08:59:58.828Z",
       "confidence": null
     },
     {
       "step": "decide",
       "agent": "decide",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "propose",
       "detail": "Propose decision from checks and policy",
-      "timestamp": "2026-10-24T07:33:13.357Z",
+      "timestamp": "2026-10-24T09:00:52.258Z",
       "confidence": null
     },
     {
@@ -263,8 +273,8 @@
       "agent": "decide",
       "model": null,
       "action": "proposal",
-      "detail": "reject rules=['R6'] evidence=['E1']",
-      "timestamp": "2026-10-24T07:33:13.357Z",
+      "detail": "reject rules=['R6'] evidence=['E1', 'E3']",
+      "timestamp": "2026-10-24T09:00:52.258Z",
       "confidence": 0.95
     },
     {
@@ -273,7 +283,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "review",
       "detail": "Check proposal against evidence and checks",
-      "timestamp": "2026-10-24T07:33:35.831Z",
+      "timestamp": "2026-10-24T09:02:05.787Z",
       "confidence": null
     },
     {
@@ -282,7 +292,7 @@
       "model": null,
       "action": "verify_claims",
       "detail": "All cited evidence, rules, numbers and windows match the checks.",
-      "timestamp": "2026-10-24T07:33:35.831Z",
+      "timestamp": "2026-10-24T09:02:05.788Z",
       "confidence": null
     },
     {
@@ -290,8 +300,8 @@
       "agent": "critic",
       "model": null,
       "action": "verdict",
-      "detail": "{\"verdict\": \"accept\", \"reason\": \"E1 confirms ORD-1066 is Digital, delivered 2026-10-18, total $39.00, final_sale false; E2 shows no prior refunds. These match the Python checks. R6 (E3) rejects delivered digital licences for changed_mind unless defective. No check conflicts.\", \"decision\": \"reject\", \"revise_target\": null}",
-      "timestamp": "2026-10-24T07:33:35.831Z",
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"All factual claims are supported by E1 (ORD-1066: Digital, delivered 2026-10-18, total $39.00, final_sale false), E2 (no prior refunds), and E3 (R6: delivered digital products are non-refundable unless defective/not working). The Python checks agree (category Digital, delivered true, order_total 39.0, already_refunded false), and category-specific R6 correctly governs over the general changed_mind rule R1.\", \"decision\": \"reject\", \"revise_target\": null}",
+      "timestamp": "2026-10-24T09:02:05.788Z",
       "confidence": 0.95
     },
     {
@@ -300,7 +310,7 @@
       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "write",
       "detail": "Write customer reply and explanation",
-      "timestamp": "2026-10-24T07:35:57.750Z",
+      "timestamp": "2026-10-24T09:03:07.292Z",
       "confidence": null
     },
     {
@@ -309,7 +319,7 @@
       "model": null,
       "action": "review",
       "detail": "Every explanation step cites real evidence and the reply matches the decision.",
-      "timestamp": "2026-10-24T07:35:57.752Z",
+      "timestamp": "2026-10-24T09:03:07.293Z",
       "confidence": null
     },
     {
@@ -317,8 +327,8 @@
       "agent": "reporter",
       "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified order ORD-1066 details\", \"evidence_id\": \"E1\", \"detail\": \"Order is a Digital product, delivered on 2026-10-18, total $39.00, final_sale false, belongs to customer C010.\"}, {\"step\": \"Checked refund history for customer C010 in the last 90 days\", \"evidence_id\": \"E2\", \"detail\": \"No prior approved refunds found; no abuse flags apply.\"}, {\"step\": \"Applied digital products policy R6\", \"evidence_id\": \"E3\", \"detail\": \"Digital licences are non\\u2011refundable once delivered unless the product does not work; the customer's reason is changed_mind, so the request is rejected.\"}]}",
-      "timestamp": "2026-10-24T07:35:57.752Z",
+      "detail": "{\"decision\": \"reject\", \"steps\": [{\"step\": \"Verified order ORD-1066 details\", \"evidence_id\": \"E1\", \"detail\": \"Order is a Digital Photo Editing Software Licence, delivered on 2026-10-18, total $39.00, final_sale false, belongs to customer C010.\"}, {\"step\": \"Checked refund history for customer C010 in the last 90 days\", \"evidence_id\": \"E2\", \"detail\": \"No prior approved refunds found; no abuse flags apply.\"}, {\"step\": \"Applied digital products policy R6\", \"evidence_id\": \"E3\", \"detail\": \"Digital licences are non-refundable once delivered unless the product does not work; the customer's reason is changed_mind, so the request is rejected.\"}]}",
+      "timestamp": "2026-10-24T09:03:07.293Z",
       "confidence": null
     },
     {
@@ -326,12 +336,12 @@
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=reject confidence=0.95 model_calls=5/12",
-      "timestamp": "2026-10-24T07:35:57.752Z",
+      "detail": "decision=reject confidence=0.95 model_calls=6/12",
+      "timestamp": "2026-10-24T09:03:07.293Z",
       "confidence": null
     }
   ],
-  "model_calls": 5,
+  "model_calls": 6,
   "scout": {
     "intent": "refund.request",
     "score": 0.5799,
@@ -355,15 +365,15 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5PD69X0T9CE8WSMY4JFAAJV",
+    "contractId": "01M5PJ6MHWRX7MFKDZ3KYZQ6BA",
     "clarification": null,
-    "latencyMs": 8.8829
+    "latencyMs": 6.8573
   },
   "explanation": [
     {
       "step": "Verified order ORD-1066 details",
       "evidence_id": "E1",
-      "detail": "Order is a Digital product, delivered on 2026-10-18, total $39.00, final_sale false, belongs to customer C010."
+      "detail": "Order is a Digital Photo Editing Software Licence, delivered on 2026-10-18, total $39.00, final_sale false, belongs to customer C010."
     },
     {
       "step": "Checked refund history for customer C010 in the last 90 days",
@@ -373,10 +383,10 @@
     {
       "step": "Applied digital products policy R6",
       "evidence_id": "E3",
-      "detail": "Digital licences are non\u2011refundable once delivered unless the product does not work; the customer's reason is changed_mind, so the request is rejected."
+      "detail": "Digital licences are non-refundable once delivered unless the product does not work; the customer's reason is changed_mind, so the request is rejected."
     }
   ],
-  "trace_id": "trace-20261024-073219-72919e",
+  "trace_id": "trace-20261024-085953-c5f734",
   "request_id": "S7",
-  "log_path": "logs/trace-20261024-073219-72919e.jsonl"
+  "log_path": "logs/trace-20261024-085953-c5f734.jsonl"
 }

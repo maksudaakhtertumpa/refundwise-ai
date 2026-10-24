@@ -1,0 +1,104 @@
+{
+  "request_id": "example-002",
+  "trace_id": "trace-20261024-092341-9ffdc7",
+  "status": "success",
+  "route": "refund.request",
+  "agents_used": [
+    "scout-intent",
+    "executor",
+    "evidence",
+    "checks",
+    "decide",
+    "critic",
+    "policy-verifier",
+    "reporter",
+    "orchestrator"
+  ],
+  "result": {
+    "decision": "human_review",
+    "confidence": 1.0,
+    "rules_applied": [
+      "R3",
+      "R7"
+    ],
+    "customer_reply": "Thank you for writing in. A support lead will review this request and contact you shortly.",
+    "explanation": [
+      {
+        "step": "lightning.metastore.refundwise.refundwise_usl.orders",
+        "evidence_id": "E1",
+        "detail": "lightning.metastore.refundwise.refundwise_usl.orders"
+      },
+      {
+        "step": "lightning.metastore.refundwise.refundwise_usl.refund_history",
+        "evidence_id": "E2",
+        "detail": "lightning.metastore.refundwise.refundwise_usl.refund_history"
+      },
+      {
+        "step": "lightning.metastore.refundwise.refundwise_usl.refund_policy",
+        "evidence_id": "E3",
+        "detail": "lightning.metastore.refundwise.refundwise_usl.refund_policy"
+      }
+    ],
+    "limitations": [
+      "Automated reply; reporter model did not return JSON."
+    ]
+  },
+  "evidence": [
+    {
+      "id": "E1",
+      "source": "lightning.metastore.refundwise.refundwise_usl.orders",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE order_id = 'ORD-1055' AND customer_id = 'C011'",
+      "row_count": 1
+    },
+    {
+      "id": "E2",
+      "source": "lightning.metastore.refundwise.refundwise_usl.refund_history",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_history WHERE customer_id = 'C011'",
+      "row_count": 0
+    },
+    {
+      "id": "E3",
+      "source": "lightning.metastore.refundwise.refundwise_usl.refund_policy",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy WHERE category = 'Electronics' OR category = 'ALL'",
+      "row_count": 9
+    }
+  ],
+  "collaboration": {
+    "feedback_loop_completed": true,
+    "critic_verdict": "accept",
+    "critic_reason": "Order total exceeds the 200.00 auto-approve limit.",
+    "revision_count": 0
+  },
+  "scout": {
+    "intent": "refund.request",
+    "score": 0.9502,
+    "band": "high",
+    "risk": {
+      "level": "medium",
+      "flags": [],
+      "redactions": [],
+      "approvals": []
+    },
+    "parameters": {
+      "order_id": "ORD-1055",
+      "reason_type": "defective"
+    },
+    "toolPlan": [
+      "order.lookup -> zetaris.run_sql",
+      "refund.history -> zetaris.run_sql",
+      "policy.lookup -> zetaris.run_sql",
+      "policy.check -> refundwise.checks",
+      "agent.review -> refundwise.multi_agent",
+      "reply.compose -> refundwise.reporter"
+    ],
+    "modelProfile": "nemotron-lightning",
+    "contractId": "01M5PKJ6JAN88ANP8A1R7EY04Z",
+    "clarification": null,
+    "latencyMs": 5.4846
+  },
+  "model_calls": 6,
+  "models_used": {
+    "nvidia/nemotron-3.5-super-vl-120b-a12b": 6
+  },
+  "log_path": "logs/trace-20261024-092341-9ffdc7.jsonl"
+}

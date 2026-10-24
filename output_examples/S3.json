@@ -9,7 +9,7 @@
     {
       "id": "E1",
       "source": "lightning.metastore.refundwise.refundwise_usl.orders",
-      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE order_id = 'ORD-1055' AND customer_id = 'C011'",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.orders WHERE customer_id = 'C011' AND order_id = 'ORD-1055'",
       "rows": [
         {
           "order_id": "ORD-1055",
@@ -148,7 +148,7 @@
       "R7"
     ],
     "confidence": 1.0,
-    "rationale": "The laptop is defective and was delivered 10 days ago, within R3's 30-day defective window; it is not final sale, not already refunded, and the customer has no prior refunds (E1, E2). However, the order total is $1249.00, which exceeds the $200.00 auto-approve limit (checks.over_auto_limit is true; E1), so per R7 the refund must be reviewed by a support lead before approval rather than auto-approved.",
+    "rationale": "ORD-1055 is a defective laptop delivered on 2026-10-15, 10 days ago, within R3's 30-day defective refund window. It is not final sale and has no prior refunds (E1, E2). However, the order total is $1249.00, exceeding the $200.00 auto-approve limit (checks.over_auto_limit is true; E1), so R7 requires support lead review before approval.",
     "evidence_ids": [
       "E1",
       "E2"
@@ -171,10 +171,9 @@
     "R3",
     "R7"
   ],
-  "customer_reply": "I'm sorry to hear your laptop won't turn on. Since your order total exceeds our auto-approval limit, it will be reviewed by a support lead who will contact you shortly with next steps.",
+  "customer_reply": "Thank you for writing in. A support lead will review this request and contact you shortly.",
   "limitations": [
-    "Physical condition of the laptop could not be independently verified beyond the customer's report.",
-    "Carrier delivery signature or timestamp details were not available for review."
+    "Automated reply; reporter model did not return JSON."
   ],
   "trace": [
     {
@@ -182,8 +181,8 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"refund.request\", \"score\": 0.9502, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PCJ9M2Y3K95YQ6SARSMNP9\", \"latencyMs\": 4.7007}",
-      "timestamp": "2026-10-24T07:21:24.360Z",
+      "detail": "{\"intent\": \"refund.request\", \"score\": 0.9502, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PHGKM3HFGBQBP1GQMSK1DB\", \"latencyMs\": 6.609}",
+      "timestamp": "2026-10-24T08:47:51.947Z",
       "confidence": null
     },
     {
@@ -192,7 +191,7 @@
       "model": null,
       "action": "contract.verified",
       "detail": "agent.review: ok",
-      "timestamp": "2026-10-24T07:21:24.360Z",
+      "timestamp": "2026-10-24T08:47:51.947Z",
       "confidence": null
     },
     {
@@ -201,16 +200,16 @@
       "model": null,
       "action": "skipped",
       "detail": "Scout contract already bound order_id=ORD-1055 reason_type=defective",
-      "timestamp": "2026-10-24T07:21:24.360Z",
+      "timestamp": "2026-10-24T08:47:51.947Z",
       "confidence": null
     },
     {
       "step": "evidence",
       "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T07:21:29.509Z",
+      "timestamp": "2026-10-24T08:47:53.374Z",
       "confidence": null
     },
     {
@@ -219,16 +218,16 @@
       "model": null,
       "action": "run_sql",
       "detail": "E1 ok=True source=lightning.metastore.refundwise.refundwise_usl.orders",
-      "timestamp": "2026-10-24T07:21:30.092Z",
+      "timestamp": "2026-10-24T08:47:54.326Z",
       "confidence": null
     },
     {
       "step": "evidence",
       "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T07:21:31.424Z",
+      "timestamp": "2026-10-24T08:47:55.344Z",
       "confidence": null
     },
     {
@@ -237,7 +236,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E2 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_history",
-      "timestamp": "2026-10-24T07:21:31.728Z",
+      "timestamp": "2026-10-24T08:47:55.546Z",
       "confidence": null
     },
     {
@@ -246,7 +245,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T07:21:32.782Z",
+      "timestamp": "2026-10-24T08:47:57.180Z",
       "confidence": null
     },
     {
@@ -255,7 +254,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E3 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "timestamp": "2026-10-24T07:21:33.588Z",
+      "timestamp": "2026-10-24T08:47:57.449Z",
       "confidence": null
     },
     {
@@ -264,7 +263,7 @@
       "model": null,
       "action": "compute",
       "detail": "{'days_since_delivery': 10, 'days_since_order': 13, 'delivered': True, 'order_total': 1249.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': True, 'order_status': 'delivered', 'delivery_date': '2026-10-15', 'order_date': '2026-10-12', 'order_found': True, 'order_belongs_to_customer': True}",
-      "timestamp": "2026-10-24T07:21:33.588Z",
+      "timestamp": "2026-10-24T08:47:57.449Z",
       "confidence": null
     },
     {
@@ -273,7 +272,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "propose",
       "detail": "Propose decision from checks and policy",
-      "timestamp": "2026-10-24T07:22:26.427Z",
+      "timestamp": "2026-10-24T08:48:43.492Z",
       "confidence": null
     },
     {
@@ -282,7 +281,7 @@
       "model": null,
       "action": "proposal",
       "detail": "human_review rules=['R3', 'R7'] evidence=['E1', 'E2']",
-      "timestamp": "2026-10-24T07:22:26.428Z",
+      "timestamp": "2026-10-24T08:48:43.492Z",
       "confidence": 1.0
     },
     {
@@ -290,8 +289,8 @@
       "agent": "critic",
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "review",
-      "detail": "Check proposal against evidence and checks (Request on 'nvidia/nemotron-3.5-super-vl-120b-a12b' was aborted; retried on 'nvidia/nemotron-3.5-lightning-30b-a3b'.)",
-      "timestamp": "2026-10-24T07:23:56.501Z",
+      "detail": "Check proposal against evidence and checks",
+      "timestamp": "2026-10-24T08:49:28.531Z",
       "confidence": null
     },
     {
@@ -300,7 +299,7 @@
       "model": null,
       "action": "verify_claims",
       "detail": "All cited evidence, rules, numbers and windows match the checks.",
-      "timestamp": "2026-10-24T07:23:56.502Z",
+      "timestamp": "2026-10-24T08:49:28.531Z",
       "confidence": null
     },
     {
@@ -309,25 +308,25 @@
       "model": null,
       "action": "verdict",
       "detail": "{\"verdict\": \"accept\", \"reason\": \"Order total exceeds the 200.00 auto-approve limit.\", \"decision\": \"human_review\", \"revise_target\": null}",
-      "timestamp": "2026-10-24T07:23:56.502Z",
+      "timestamp": "2026-10-24T08:49:28.531Z",
       "confidence": 1.0
     },
     {
       "step": "reporter",
       "agent": "reporter",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "write",
-      "detail": "Write customer reply and explanation",
-      "timestamp": "2026-10-24T07:24:41.527Z",
+      "detail": "Write customer reply and explanation (Request on 'nvidia/nemotron-3.5-lightning-30b-a3b' was aborted; retried on 'nvidia/nemotron-3.5-lightning-30b-a3b'.)",
+      "timestamp": "2026-10-24T08:50:58.605Z",
       "confidence": null
     },
     {
       "step": "reporter",
-      "agent": "final-reviewer",
+      "agent": "reporter",
       "model": null,
-      "action": "review",
-      "detail": "Every explanation step cites real evidence and the reply matches the decision.",
-      "timestamp": "2026-10-24T07:24:41.528Z",
+      "action": "fallback_text",
+      "detail": "Used template reply after invalid JSON",
+      "timestamp": "2026-10-24T08:50:58.606Z",
       "confidence": null
     },
     {
@@ -335,8 +334,8 @@
       "agent": "reporter",
       "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"Verified order details for ORD-1055\", \"evidence_id\": \"E1\", \"detail\": \"Order delivered 10 days ago, total $1249.00, not final sale, status delivered.\"}, {\"step\": \"Checked refund history for customer C011\", \"evidence_id\": \"E2\", \"detail\": \"No prior refunds found in the last 90 days.\"}, {\"step\": \"Compared defective claim against policy rules\", \"evidence_id\": \"E3\", \"detail\": \"Policy R3 covers defective returns within 30 days, but R7 requires support lead review for refunds above $200.00; order total $1249.00 exceeds this limit.\"}]}",
-      "timestamp": "2026-10-24T07:24:41.528Z",
+      "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"lightning.metastore.refundwise.refundwise_usl.orders\", \"evidence_id\": \"E1\", \"detail\": \"lightning.metastore.refundwise.refundwise_usl.orders\"}, {\"step\": \"lightning.metastore.refundwise.refundwise_usl.refund_history\", \"evidence_id\": \"E2\", \"detail\": \"lightning.metastore.refundwise.refundwise_usl.refund_history\"}, {\"step\": \"lightning.metastore.refundwise.refundwise_usl.refund_policy\", \"evidence_id\": \"E3\", \"detail\": \"lightning.metastore.refundwise.refundwise_usl.refund_policy\"}]}",
+      "timestamp": "2026-10-24T08:50:58.606Z",
       "confidence": null
     },
     {
@@ -345,7 +344,7 @@
       "model": null,
       "action": "done",
       "detail": "decision=human_review confidence=1.0 model_calls=6/12",
-      "timestamp": "2026-10-24T07:24:41.528Z",
+      "timestamp": "2026-10-24T08:50:58.606Z",
       "confidence": null
     }
   ],
@@ -373,28 +372,28 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5PCJ9M2Y3K95YQ6SARSMNP9",
+    "contractId": "01M5PHGKM3HFGBQBP1GQMSK1DB",
     "clarification": null,
-    "latencyMs": 4.7007
+    "latencyMs": 6.609
   },
   "explanation": [
     {
-      "step": "Verified order details for ORD-1055",
+      "step": "lightning.metastore.refundwise.refundwise_usl.orders",
       "evidence_id": "E1",
-      "detail": "Order delivered 10 days ago, total $1249.00, not final sale, status delivered."
+      "detail": "lightning.metastore.refundwise.refundwise_usl.orders"
     },
     {
-      "step": "Checked refund history for customer C011",
+      "step": "lightning.metastore.refundwise.refundwise_usl.refund_history",
       "evidence_id": "E2",
-      "detail": "No prior refunds found in the last 90 days."
+      "detail": "lightning.metastore.refundwise.refundwise_usl.refund_history"
     },
     {
-      "step": "Compared defective claim against policy rules",
+      "step": "lightning.metastore.refundwise.refundwise_usl.refund_policy",
       "evidence_id": "E3",
-      "detail": "Policy R3 covers defective returns within 30 days, but R7 requires support lead review for refunds above $200.00; order total $1249.00 exceeds this limit."
+      "detail": "lightning.metastore.refundwise.refundwise_usl.refund_policy"
     }
   ],
-  "trace_id": "trace-20261024-072124-626519",
+  "trace_id": "trace-20261024-084751-2a8f5c",
   "request_id": "S3",
-  "log_path": "logs/trace-20261024-072124-626519.jsonl"
+  "log_path": "logs/trace-20261024-084751-2a8f5c.jsonl"
 }

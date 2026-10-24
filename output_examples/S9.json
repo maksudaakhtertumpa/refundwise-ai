@@ -22,8 +22,8 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"policy.question\", \"score\": 0.8976, \"band\": \"high\", \"risk\": \"block\", \"flags\": [\"injection\"], \"contract\": null, \"latencyMs\": 1.9045}",
-      "timestamp": "2026-10-24T07:38:20.876Z",
+      "detail": "{\"intent\": \"policy.question\", \"score\": 0.8976, \"band\": \"high\", \"risk\": \"block\", \"flags\": [\"injection\"], \"contract\": null, \"latencyMs\": 1.9991}",
+      "timestamp": "2026-10-24T09:05:27.187Z",
       "confidence": null
     },
     {
@@ -32,7 +32,7 @@
       "model": null,
       "action": "done",
       "detail": "decision=refused routed_by=scout intent=policy.question model_calls=0",
-      "timestamp": "2026-10-24T07:38:20.876Z",
+      "timestamp": "2026-10-24T09:05:27.187Z",
       "confidence": null
     }
   ],
@@ -55,10 +55,10 @@
     "modelProfile": null,
     "contractId": null,
     "clarification": null,
-    "latencyMs": 1.9045
+    "latencyMs": 1.9991
   },
   "explanation": [],
-  "trace_id": "trace-20261024-073820-7612b2",
+  "trace_id": "trace-20261024-090527-c0e17a",
   "request_id": "S9",
-  "log_path": "logs/trace-20261024-073820-7612b2.jsonl"
+  "log_path": "logs/trace-20261024-090527-c0e17a.jsonl"
 }

@@ -115,7 +115,7 @@ class Verifier(unittest.TestCase):
                "explanation": [{"step": "x", "evidence_id": "E7"}]}
         issues = " | ".join(review_report(case, bad))
         self.assertIn("E7", issues)
-        self.assertIn("approved", issues)
+        self.assertIn("Reply:", issues)
         good = {"customer_reply": "Sorry, the return window has passed.",
                 "explanation": [{"step": "Order", "evidence_id": "E1"}]}
         self.assertEqual(review_report(case, good), [])

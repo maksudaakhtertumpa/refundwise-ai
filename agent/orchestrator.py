@@ -11,6 +11,7 @@ from agent.reporter import write_report
 from agent.router import route_request
 from agent.runtime import MAX_MODEL_CALLS, ModelBudgetExceeded
 from agent.state import CaseFile
+from agent.verifier import verify_proposal
 from agent.tracing import write_log
 
 MAX_REVISIONS = 2
@@ -100,6 +101,14 @@ def _run_case(message: str, customer_id: str, demo_today: str | None, request_id
             propose_decision(case)
         if case.decision not in {"approve", "reject", "human_review"}:
             case.decision = "human_review"
+        if case.decision == "approve":
+            # Final approval gate: an approval must pass the deterministic policy checks, whatever the models said.
+            blockers = verify_proposal(case) if case.proposed_decision else ["no proposal on record"]
+            if blockers:
+                case.decision = "human_review"
+                case.limitations = list(case.limitations) + ["Approval blocked by the policy gate: " + "; ".join(blockers)]
+                case.add_trace(step="orchestrator", agent="orchestrator", action="approval_gate",
+                               detail="blocked: " + "; ".join(blockers)[:400])
         write_report(case)
     except ModelBudgetExceeded as exc:
         case.decision = "human_review"
@@ -188,8 +197,8 @@ def _fallback_reply(decision: str | None) -> str:
     """Plain customer reply used when the reporter model could not run."""
     if decision == "approve":
         return (
-            "Thank you for writing in. Your refund has been approved and will be "
-            "returned to your original payment method within 5-7 business days."
+            "Thank you for writing in. Your request meets our refund policy and is approved "
+            "for processing. You will get a confirmation once the refund is issued."
         )
     if decision == "reject":
         return (
