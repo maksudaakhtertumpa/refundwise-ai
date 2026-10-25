@@ -38,7 +38,7 @@
     {
       "id": "E3",
       "source": "lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy WHERE category = 'Home' OR category = 'ALL'",
+      "sql": "SELECT * FROM lightning.metastore.refundwise.refundwise_usl.refund_policy WHERE category IN ('Home', 'ALL')",
       "rows": [
         {
           "rule_id": "R1",
@@ -130,7 +130,8 @@
     "delivery_date": null,
     "order_date": "2026-10-01",
     "order_found": true,
-    "order_belongs_to_customer": true
+    "order_belongs_to_customer": true,
+    "customer_says_unopened": null
   },
   "proposed_decision": {
     "decision": "approve",
@@ -138,17 +139,16 @@
       "R4"
     ],
     "confidence": 1.0,
-    "rationale": "Order ORD-1060 was placed on 2026-10-01 and has not been delivered after 24 days, exceeding R4's 14-day not_received threshold (E1). The order total is $95.00, under the $200.00 auto-approve limit; final_sale is false, already_refunded is false, and approved_refunds_last_90_days is 0 (E1, E2). No conflicting rule applies (E3).",
+    "rationale": "Order ORD-1060 (Ceramic Dinner Set, Home) was ordered 2026-10-01, shows delivery_date null and delivered false, and 24 days have passed since the order date, exceeding R4's 14-day not-received window (E1). The $95.00 total is under the $200.00 auto-approve limit, the item is not final sale, the order has not already been refunded, and the customer has no prior refunds in the last 90 days (E1, E2).",
     "evidence_ids": [
       "E1",
-      "E2",
-      "E3"
+      "E2"
     ]
   },
   "critique": {
     "verdict": "accept",
     "missing_evidence": "",
-    "reason": "Every factual claim in the proposal is supported by an evidence id and matches the Python checks: E1 confirms order date 2026-10-01, delivery_date null, status shipped, order_total $95.00, final_sale false; E2's empty refund history confirms already_refunded false and 0 approved refunds in the last 90 days; E3 contains R4 (14-day not_received threshold, $200.00 auto-approve limit, outcome approve) and no blocking rule (R5, R7, R8, R9, R10) applies given final_sale=false, total under limit, zero prior refunds, and no record conflict. The 24 days since order exceeds the 14-day threshold.",
+    "reason": "All factual claims are supported by evidence ids and agree with the Python checks: E1 confirms ORD-1060 ordered 2026-10-01, delivery_date null, status shipped, $95.00 total, Home category, not final sale; checks confirm delivered false, 24 days since order, over_auto_limit false, already_refunded false, approved_refunds_last_90_days 0. E2 confirms no prior refunds. E3 contains R4's 14-day not-received window and $200 auto-approve limit; 24 days exceeds 14 and $95 is under $200, so R4 auto-approve applies and R7/R8/R10 do not trigger.",
     "issues": []
   },
   "decision": "approve",
@@ -156,9 +156,9 @@
   "rules_applied": [
     "R4"
   ],
-  "customer_reply": "I'm sorry your Ceramic Dinner Set hasn't arrived yet. Since it's been 24 days since your order on October 1st, you can choose a full refund or a replacement. Please let me know which you prefer.",
+  "customer_reply": "I'm sorry to hear your Ceramic Dinner Set still hasn't arrived. Since it's been 24 days since your order on October 1st, you can choose a full refund or a replacement. Please let me know which option you prefer.",
   "limitations": [
-    "No delivery tracking carrier details beyond order status were available for verification."
+    "No carrier tracking details beyond the order status were available for verification. The refund is processed separately by RefundWise, and no payment timing is promised."
   ],
   "trace": [
     {
@@ -166,8 +166,8 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"order.not-received\", \"score\": 0.9433, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PRTX5VP2XD2MH0PD3NGM6T\", \"latencyMs\": 10.5542}",
-      "timestamp": "2026-10-24T10:55:49.446Z",
+      "detail": "{\"intent\": \"order.not-received\", \"score\": 0.9433, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5SD0AP63S5KVPWT4FPQFBK4\", \"latencyMs\": 4.5505}",
+      "timestamp": "2026-10-25T11:26:47.500Z",
       "confidence": null
     },
     {
@@ -176,7 +176,7 @@
       "model": null,
       "action": "contract.verified",
       "detail": "agent.review: ok",
-      "timestamp": "2026-10-24T10:55:49.447Z",
+      "timestamp": "2026-10-25T11:26:47.501Z",
       "confidence": null
     },
     {
@@ -185,16 +185,16 @@
       "model": null,
       "action": "skipped",
       "detail": "Scout contract already bound order_id=ORD-1060 reason_type=not_received",
-      "timestamp": "2026-10-24T10:55:49.447Z",
+      "timestamp": "2026-10-25T11:26:47.501Z",
       "confidence": null
     },
     {
       "step": "evidence",
       "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T10:55:50.600Z",
+      "timestamp": "2026-10-25T11:26:50.089Z",
       "confidence": null
     },
     {
@@ -203,7 +203,16 @@
       "model": null,
       "action": "run_sql",
       "detail": "E1 ok=True source=lightning.metastore.refundwise.refundwise_usl.orders",
-      "timestamp": "2026-10-24T10:55:51.695Z",
+      "timestamp": "2026-10-25T11:26:51.082Z",
+      "confidence": null
+    },
+    {
+      "step": "evidence",
+      "agent": "evidence",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "action": "tool_round",
+      "detail": "Collect order, history, policy",
+      "timestamp": "2026-10-25T11:26:51.769Z",
       "confidence": null
     },
     {
@@ -212,7 +221,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E2 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_history",
-      "timestamp": "2026-10-24T10:55:51.868Z",
+      "timestamp": "2026-10-25T11:26:52.148Z",
       "confidence": null
     },
     {
@@ -221,7 +230,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T10:55:52.876Z",
+      "timestamp": "2026-10-25T11:26:52.937Z",
       "confidence": null
     },
     {
@@ -230,7 +239,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E3 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "timestamp": "2026-10-24T10:55:53.086Z",
+      "timestamp": "2026-10-25T11:26:53.723Z",
       "confidence": null
     },
     {
@@ -238,8 +247,8 @@
       "agent": "checks",
       "model": null,
       "action": "compute",
-      "detail": "{'days_since_delivery': None, 'days_since_order': 24, 'delivered': False, 'order_total': 95.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Home', 'over_auto_limit': False, 'order_status': 'shipped', 'delivery_date': None, 'order_date': '2026-10-01', 'order_found': True, 'order_belongs_to_customer': True}",
-      "timestamp": "2026-10-24T10:55:53.086Z",
+      "detail": "{'days_since_delivery': None, 'days_since_order': 24, 'delivered': False, 'order_total': 95.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Home', 'over_auto_limit': False, 'order_status': 'shipped', 'delivery_date': None, 'order_date': '2026-10-01', 'order_found': True, 'order_belongs_to_customer': True, 'customer_says_unopened': None}",
+      "timestamp": "2026-10-25T11:26:53.723Z",
       "confidence": null
     },
     {
@@ -248,7 +257,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "propose",
       "detail": "Propose decision from checks and policy",
-      "timestamp": "2026-10-24T10:56:38.121Z",
+      "timestamp": "2026-10-25T11:27:21.309Z",
       "confidence": null
     },
     {
@@ -256,8 +265,8 @@
       "agent": "decide",
       "model": null,
       "action": "proposal",
-      "detail": "approve rules=['R4'] evidence=['E1', 'E2', 'E3']",
-      "timestamp": "2026-10-24T10:56:38.122Z",
+      "detail": "approve rules=['R4'] evidence=['E1', 'E2']",
+      "timestamp": "2026-10-25T11:27:21.309Z",
       "confidence": 1.0
     },
     {
@@ -266,7 +275,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "review",
       "detail": "Check proposal against evidence and checks",
-      "timestamp": "2026-10-24T10:57:23.157Z",
+      "timestamp": "2026-10-25T11:28:01.141Z",
       "confidence": null
     },
     {
@@ -275,7 +284,7 @@
       "model": null,
       "action": "verify_claims",
       "detail": "All cited evidence, rules, numbers and windows match the checks.",
-      "timestamp": "2026-10-24T10:57:23.158Z",
+      "timestamp": "2026-10-25T11:28:01.142Z",
       "confidence": null
     },
     {
@@ -283,17 +292,17 @@
       "agent": "critic",
       "model": null,
       "action": "verdict",
-      "detail": "{\"verdict\": \"accept\", \"reason\": \"Every factual claim in the proposal is supported by an evidence id and matches the Python checks: E1 confirms order date 2026-10-01, delivery_date null, status shipped, order_total $95.00, final_sale false; E2's empty refund history confirms already_refunded false and 0 approved refunds in the last 90 days; E3 contains R4 (14-day not_received threshold, $200.00 auto-approve limit, outcome approve) and no blocking rule (R5, R7, R8, R9, R10) applies given final_sale=false, total under limit, zero prior refunds, and no record conflict. The 24 days since order exceeds the 14-day threshold.\", \"decision\": \"approve\", \"revise_target\": null}",
-      "timestamp": "2026-10-24T10:57:23.158Z",
+      "detail": "{\"verdict\": \"accept\", \"reason\": \"All factual claims are supported by evidence ids and agree with the Python checks: E1 confirms ORD-1060 ordered 2026-10-01, delivery_date null, status shipped, $95.00 total, Home category, not final sale; checks confirm delivered false, 24 days since order, over_auto_limit false, already_refunded false, approved_refunds_last_90_days 0. E2 confirms no prior refunds. E3 contains R4's 14-day not-received window and $200 auto-approve limit; 24 days exceeds 14 and $95 is under $200, so R4 auto-approve applies and R7/R8/R10 do not trigger.\", \"decision\": \"approve\", \"revise_target\": null}",
+      "timestamp": "2026-10-25T11:28:01.142Z",
       "confidence": 1.0
     },
     {
       "step": "reporter",
       "agent": "reporter",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "write",
       "detail": "Write customer reply and explanation",
-      "timestamp": "2026-10-24T10:58:14.213Z",
+      "timestamp": "2026-10-25T11:29:15.350Z",
       "confidence": null
     },
     {
@@ -302,7 +311,7 @@
       "model": null,
       "action": "review",
       "detail": "Every explanation step cites real evidence and the reply matches the decision.",
-      "timestamp": "2026-10-24T10:58:14.213Z",
+      "timestamp": "2026-10-25T11:29:15.350Z",
       "confidence": null
     },
     {
@@ -310,8 +319,8 @@
       "agent": "reporter",
       "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"approve\", \"steps\": [{\"step\": \"Reviewed order details and timing\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1060 placed on 2026-10-01, status shipped, no delivery date, 24 days elapsed.\"}, {\"step\": \"Checked refund policy for undelivered orders\", \"evidence_id\": \"E3\", \"detail\": \"Policy R4 allows customer to choose refund or replacement if order not delivered 14 days after order date; order total $95.00 is under the $200.00 auto-approve limit.\"}, {\"step\": \"Verified refund history and eligibility\", \"evidence_id\": \"E2\", \"detail\": \"No approved refunds in the last 90 days; order has not already been refunded.\"}]}",
-      "timestamp": "2026-10-24T10:58:14.213Z",
+      "detail": "{\"decision\": \"approve\", \"steps\": [{\"step\": \"Verified order ownership and delivery status\", \"evidence_id\": \"E1\", \"detail\": \"Order ORD-1060 belongs to customer C009, was ordered on 2026-10-01, shows status shipped with no delivery date, totals $95.00, and is not marked final sale.\"}, {\"step\": \"Checked refund history for recent approvals\", \"evidence_id\": \"E2\", \"detail\": \"No approved refunds are on file for this customer in the last 90 days.\"}, {\"step\": \"Applied the not-received policy window and auto-approve limit\", \"evidence_id\": \"E3\", \"detail\": \"Policy R4 allows a refund or replacement when an order has not been delivered 14 days after the order date; 24 days have passed, and the $95.00 total is under the $200.00 auto-approve limit.\"}]}",
+      "timestamp": "2026-10-25T11:29:15.350Z",
       "confidence": null
     },
     {
@@ -319,12 +328,12 @@
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=approve confidence=1.0 model_calls=5/12",
-      "timestamp": "2026-10-24T10:58:14.213Z",
+      "detail": "decision=approve confidence=1.0 model_calls=6/12",
+      "timestamp": "2026-10-25T11:29:15.350Z",
       "confidence": null
     }
   ],
-  "model_calls": 5,
+  "model_calls": 6,
   "scout": {
     "intent": "order.not-received",
     "score": 0.9433,
@@ -348,28 +357,28 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5PRTX5VP2XD2MH0PD3NGM6T",
+    "contractId": "01M5SD0AP63S5KVPWT4FPQFBK4",
     "clarification": null,
-    "latencyMs": 10.5542
+    "latencyMs": 4.5505
   },
   "explanation": [
     {
-      "step": "Reviewed order details and timing",
+      "step": "Verified order ownership and delivery status",
       "evidence_id": "E1",
-      "detail": "Order ORD-1060 placed on 2026-10-01, status shipped, no delivery date, 24 days elapsed."
+      "detail": "Order ORD-1060 belongs to customer C009, was ordered on 2026-10-01, shows status shipped with no delivery date, totals $95.00, and is not marked final sale."
     },
     {
-      "step": "Checked refund policy for undelivered orders",
-      "evidence_id": "E3",
-      "detail": "Policy R4 allows customer to choose refund or replacement if order not delivered 14 days after order date; order total $95.00 is under the $200.00 auto-approve limit."
-    },
-    {
-      "step": "Verified refund history and eligibility",
+      "step": "Checked refund history for recent approvals",
       "evidence_id": "E2",
-      "detail": "No approved refunds in the last 90 days; order has not already been refunded."
+      "detail": "No approved refunds are on file for this customer in the last 90 days."
+    },
+    {
+      "step": "Applied the not-received policy window and auto-approve limit",
+      "evidence_id": "E3",
+      "detail": "Policy R4 allows a refund or replacement when an order has not been delivered 14 days after the order date; 24 days have passed, and the $95.00 total is under the $200.00 auto-approve limit."
     }
   ],
-  "trace_id": "trace-20261024-105549-dae1b8",
+  "trace_id": "trace-20261025-112647-cdf89c",
   "request_id": "S5",
-  "log_path": "logs/trace-20261024-105549-dae1b8.jsonl"
+  "log_path": "logs/trace-20261025-112647-cdf89c.jsonl"
 }

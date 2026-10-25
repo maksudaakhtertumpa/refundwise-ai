@@ -158,7 +158,8 @@
     "delivery_date": "2026-10-06",
     "order_date": "2026-10-02",
     "order_found": true,
-    "order_belongs_to_customer": true
+    "order_belongs_to_customer": true,
+    "customer_says_unopened": null
   },
   "proposed_decision": {
     "decision": "human_review",
@@ -167,11 +168,10 @@
       "R8"
     ],
     "confidence": 1.0,
-    "rationale": "R1 basics are met: ORD-1031 is a Clothing changed_mind request, delivered 2026-10-06 (19 days ago, within the 30-day window), $59.90 total is under the $200 auto-approve limit, the item is not final sale, and it has not already been refunded (E1). However, E2 shows customer C005 has exactly 3 approved refunds in the last 90 days, so R8 routes the case to human review to check for abuse (E3).",
+    "rationale": "Changed-mind request for a clothing item delivered 19 days ago, within R1's 30-day window; order total $59.90 is under the $200.00 auto-approve limit, not final sale, and not already refunded (E1). However, the customer has exactly 3 approved refunds in the last 90 days (E2), so R8 mandates human review to check for abuse.",
     "evidence_ids": [
       "E1",
-      "E2",
-      "E3"
+      "E2"
     ]
   },
   "critique": {
@@ -191,10 +191,10 @@
     "R1",
     "R8"
   ],
-  "customer_reply": "Thanks for contacting RefundWise about your Linen Summer Dress from order ORD-1031. I can see it was delivered on October 6, 2026, which means your request is still within the 30-day return window. Since you have multiple recent approved refunds, our team will personally review this case before deciding. We will reach out to you with the result.",
+  "customer_reply": "Hi there, thanks for contacting us about your Linen Summer Dress from order ORD-1031. We\u2019ve confirmed the dress was delivered on October 6, 2026, and your request falls within our 30\u2011day window for changed\u2011mind returns. Because you\u2019ve had several recent refund requests, our support team will personally review this case and follow up with you soon with a final decision.",
   "limitations": [
-    "Item condition (unused) could not be verified from the available records.",
-    "The final refund decision and any payment timing depend on the human review."
+    "Item condition (unused/unworn) could not be verified from available evidence.",
+    "Final refund approval requires manual review by a support lead."
   ],
   "trace": [
     {
@@ -202,8 +202,8 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"refund.request\", \"score\": 1, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PRNYNKPHZGRM9SJYAPDXR5\", \"latencyMs\": 7.6017}",
-      "timestamp": "2026-10-24T10:53:07.131Z",
+      "detail": "{\"intent\": \"refund.request\", \"score\": 1, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5SCRSNY8S7DXHAA57RNM4AT\", \"latencyMs\": 3.6325}",
+      "timestamp": "2026-10-25T11:22:40.706Z",
       "confidence": null
     },
     {
@@ -212,7 +212,7 @@
       "model": null,
       "action": "contract.verified",
       "detail": "agent.review: ok",
-      "timestamp": "2026-10-24T10:53:07.131Z",
+      "timestamp": "2026-10-25T11:22:40.706Z",
       "confidence": null
     },
     {
@@ -221,16 +221,16 @@
       "model": null,
       "action": "skipped",
       "detail": "Scout contract already bound order_id=ORD-1031 reason_type=changed_mind",
-      "timestamp": "2026-10-24T10:53:07.131Z",
+      "timestamp": "2026-10-25T11:22:40.706Z",
       "confidence": null
     },
     {
       "step": "evidence",
       "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T10:53:09.857Z",
+      "timestamp": "2026-10-25T11:22:42.134Z",
       "confidence": null
     },
     {
@@ -239,16 +239,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E1 ok=True source=lightning.metastore.refundwise.refundwise_usl.orders",
-      "timestamp": "2026-10-24T10:53:10.260Z",
-      "confidence": null
-    },
-    {
-      "step": "evidence",
-      "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-      "action": "tool_round",
-      "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T10:53:11.137Z",
+      "timestamp": "2026-10-25T11:22:42.712Z",
       "confidence": null
     },
     {
@@ -257,16 +248,16 @@
       "model": null,
       "action": "run_sql",
       "detail": "E2 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_history",
-      "timestamp": "2026-10-24T10:53:11.361Z",
+      "timestamp": "2026-10-25T11:22:43.410Z",
       "confidence": null
     },
     {
       "step": "evidence",
       "agent": "evidence",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T10:53:13.275Z",
+      "timestamp": "2026-10-25T11:22:44.525Z",
       "confidence": null
     },
     {
@@ -275,7 +266,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E3 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "timestamp": "2026-10-24T10:53:13.506Z",
+      "timestamp": "2026-10-25T11:22:44.876Z",
       "confidence": null
     },
     {
@@ -283,8 +274,8 @@
       "agent": "checks",
       "model": null,
       "action": "compute",
-      "detail": "{'days_since_delivery': 19, 'days_since_order': 23, 'delivered': True, 'order_total': 59.9, 'already_refunded': False, 'approved_refunds_last_90_days': 3, 'final_sale': False, 'category': 'Clothing', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-10-06', 'order_date': '2026-10-02', 'order_found': True, 'order_belongs_to_customer': True}",
-      "timestamp": "2026-10-24T10:53:13.506Z",
+      "detail": "{'days_since_delivery': 19, 'days_since_order': 23, 'delivered': True, 'order_total': 59.9, 'already_refunded': False, 'approved_refunds_last_90_days': 3, 'final_sale': False, 'category': 'Clothing', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-10-06', 'order_date': '2026-10-02', 'order_found': True, 'order_belongs_to_customer': True, 'customer_says_unopened': None}",
+      "timestamp": "2026-10-25T11:22:44.876Z",
       "confidence": null
     },
     {
@@ -292,8 +283,8 @@
       "agent": "decide",
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "propose",
-      "detail": "Propose decision from checks and policy (Request on 'nvidia/nemotron-3.5-super-vl-120b-a12b' was aborted; retried on 'nvidia/nemotron-3.5-lightning-30b-a3b'.)",
-      "timestamp": "2026-10-24T10:54:31.834Z",
+      "detail": "Propose decision from checks and policy",
+      "timestamp": "2026-10-25T11:23:45.203Z",
       "confidence": null
     },
     {
@@ -301,17 +292,17 @@
       "agent": "decide",
       "model": null,
       "action": "proposal",
-      "detail": "human_review rules=['R1', 'R8'] evidence=['E1', 'E2', 'E3']",
-      "timestamp": "2026-10-24T10:54:31.834Z",
+      "detail": "human_review rules=['R1', 'R8'] evidence=['E1', 'E2']",
+      "timestamp": "2026-10-25T11:23:45.203Z",
       "confidence": 1.0
     },
     {
       "step": "critic",
       "agent": "critic",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "review",
       "detail": "Check proposal against evidence and checks",
-      "timestamp": "2026-10-24T10:54:51.413Z",
+      "timestamp": "2026-10-25T11:26:26.024Z",
       "confidence": null
     },
     {
@@ -320,7 +311,7 @@
       "model": null,
       "action": "verify_claims",
       "detail": "All cited evidence, rules, numbers and windows match the checks.",
-      "timestamp": "2026-10-24T10:54:51.414Z",
+      "timestamp": "2026-10-25T11:26:26.025Z",
       "confidence": null
     },
     {
@@ -329,7 +320,7 @@
       "model": null,
       "action": "verdict",
       "detail": "{\"verdict\": \"accept\", \"reason\": \"Customer has 3 or more approved refunds in the last 90 days.\", \"decision\": \"human_review\", \"revise_target\": null}",
-      "timestamp": "2026-10-24T10:54:51.414Z",
+      "timestamp": "2026-10-25T11:26:26.025Z",
       "confidence": 1.0
     },
     {
@@ -338,7 +329,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "write",
       "detail": "Write customer reply and explanation",
-      "timestamp": "2026-10-24T10:55:49.347Z",
+      "timestamp": "2026-10-25T11:26:47.410Z",
       "confidence": null
     },
     {
@@ -347,7 +338,7 @@
       "model": null,
       "action": "review",
       "detail": "Every explanation step cites real evidence and the reply matches the decision.",
-      "timestamp": "2026-10-24T10:55:49.347Z",
+      "timestamp": "2026-10-25T11:26:47.410Z",
       "confidence": null
     },
     {
@@ -355,8 +346,8 @@
       "agent": "reporter",
       "model": null,
       "action": "reply",
-      "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"Verify order ORD-1031 for customer C005\", \"evidence_id\": \"E1\", \"detail\": \"Order delivered 2026-10-06, total $59.90, category Clothing, not final sale, status delivered, not already refunded.\"}, {\"step\": \"Review customer C005 refund history\", \"evidence_id\": \"E2\", \"detail\": \"Three approved refunds in the last 90 days (RF-2001, RF-2002, RF-2003).\"}, {\"step\": \"Apply refund policy rules\", \"evidence_id\": \"E3\", \"detail\": \"R1 permits changed-mind refunds within 30 days under $200; R8 sends customers with 3 or more refunds in 90 days to human review.\"}]}",
-      "timestamp": "2026-10-24T10:55:49.347Z",
+      "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"Checked order ORD-1031 details\", \"evidence_id\": \"E1\", \"detail\": \"Order delivered 2026-10-06, total $59.90, category Clothing, status delivered, not final sale.\"}, {\"step\": \"Reviewed recent refund history for customer C005\", \"evidence_id\": \"E2\", \"detail\": \"Customer has exactly three approved refunds in the last 90 days (RF-2001, RF-2002, RF-2003).\"}, {\"step\": \"Applied refund policy for changed\\u2011mind requests\", \"evidence_id\": \"E3\", \"detail\": \"Rule R1 allows a 30\\u2011day window for unused items; the order is within 19 days of delivery, under the $200.00 auto\\u2011approve limit, and not already refunded. Rule R8 routes customers with 3 or more refunds in the last 90 days to human review to check for abuse.\"}]}",
+      "timestamp": "2026-10-25T11:26:47.410Z",
       "confidence": null
     },
     {
@@ -364,12 +355,12 @@
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=human_review confidence=1.0 model_calls=6/12",
-      "timestamp": "2026-10-24T10:55:49.347Z",
+      "detail": "decision=human_review confidence=1.0 model_calls=5/12",
+      "timestamp": "2026-10-25T11:26:47.411Z",
       "confidence": null
     }
   ],
-  "model_calls": 6,
+  "model_calls": 5,
   "scout": {
     "intent": "refund.request",
     "score": 1,
@@ -393,28 +384,28 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5PRNYNKPHZGRM9SJYAPDXR5",
+    "contractId": "01M5SCRSNY8S7DXHAA57RNM4AT",
     "clarification": null,
-    "latencyMs": 7.6017
+    "latencyMs": 3.6325
   },
   "explanation": [
     {
-      "step": "Verify order ORD-1031 for customer C005",
+      "step": "Checked order ORD-1031 details",
       "evidence_id": "E1",
-      "detail": "Order delivered 2026-10-06, total $59.90, category Clothing, not final sale, status delivered, not already refunded."
+      "detail": "Order delivered 2026-10-06, total $59.90, category Clothing, status delivered, not final sale."
     },
     {
-      "step": "Review customer C005 refund history",
+      "step": "Reviewed recent refund history for customer C005",
       "evidence_id": "E2",
-      "detail": "Three approved refunds in the last 90 days (RF-2001, RF-2002, RF-2003)."
+      "detail": "Customer has exactly three approved refunds in the last 90 days (RF-2001, RF-2002, RF-2003)."
     },
     {
-      "step": "Apply refund policy rules",
+      "step": "Applied refund policy for changed\u2011mind requests",
       "evidence_id": "E3",
-      "detail": "R1 permits changed-mind refunds within 30 days under $200; R8 sends customers with 3 or more refunds in 90 days to human review."
+      "detail": "Rule R1 allows a 30\u2011day window for unused items; the order is within 19 days of delivery, under the $200.00 auto\u2011approve limit, and not already refunded. Rule R8 routes customers with 3 or more refunds in the last 90 days to human review to check for abuse."
     }
   ],
-  "trace_id": "trace-20261024-105307-3a1bad",
+  "trace_id": "trace-20261025-112240-ea0b71",
   "request_id": "S4",
-  "log_path": "logs/trace-20261024-105307-3a1bad.jsonl"
+  "log_path": "logs/trace-20261025-112240-ea0b71.jsonl"
 }

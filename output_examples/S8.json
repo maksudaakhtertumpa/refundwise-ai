@@ -139,7 +139,8 @@
     "delivery_date": "2026-10-17",
     "order_date": "2026-10-14",
     "order_found": true,
-    "order_belongs_to_customer": true
+    "order_belongs_to_customer": true,
+    "customer_says_unopened": null
   },
   "proposed_decision": {
     "decision": "human_review",
@@ -147,7 +148,7 @@
       "R10"
     ],
     "confidence": 1.0,
-    "rationale": "The customer claims ORD-1070 was never received (not_received), but E1 shows the order status is delivered with delivery_date 2026-10-17, and checks confirm delivered=true only 11 days after the order date. This conflict between the customer's claim and order records triggers R10. R4 does not apply because the item was delivered within 14 days of the order date.",
+    "rationale": "Customer claims Bluetooth speaker never arrived (reason_type: not_received), but order E1 records show delivered=true on 2026-10-17 with order_status delivered, creating a conflict with the customer's claim per rule R10. Therefore, the case requires human review to reconcile records and verify delivery.",
     "evidence_ids": [
       "E1"
     ]
@@ -164,13 +165,13 @@
     }
   },
   "decision": "human_review",
-  "confidence": 1.0,
+  "confidence": 0.95,
   "rules_applied": [
     "R10"
   ],
-  "customer_reply": "Thank you for writing in. A support lead will review this request and contact you shortly.",
+  "customer_reply": "Thank you for writing in. A support lead will review this request and get back to you shortly.",
   "limitations": [
-    "Automated reply; reporter model did not return JSON."
+    "The AI model was not available or did not answer in time; the decision comes from the deterministic policy guard R10: Customer claims not received but records show delivered."
   ],
   "trace": [
     {
@@ -178,8 +179,8 @@
       "agent": "scout-intent",
       "model": null,
       "action": "decide",
-      "detail": "{\"intent\": \"order.not-received\", \"score\": 0.9347, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5PS98CBQ7G8KEQ17ZYJ0GN1\", \"latencyMs\": 12.2369}",
-      "timestamp": "2026-10-24T11:03:39.672Z",
+      "detail": "{\"intent\": \"order.not-received\", \"score\": 0.9347, \"band\": \"high\", \"risk\": \"medium\", \"flags\": [], \"contract\": \"01M5SEBWPC6YS5KBR5TNNFJXKJ\", \"latencyMs\": 10.255}",
+      "timestamp": "2026-10-25T11:50:34.967Z",
       "confidence": null
     },
     {
@@ -188,7 +189,7 @@
       "model": null,
       "action": "contract.verified",
       "detail": "agent.review: ok",
-      "timestamp": "2026-10-24T11:03:39.672Z",
+      "timestamp": "2026-10-25T11:50:34.968Z",
       "confidence": null
     },
     {
@@ -197,7 +198,7 @@
       "model": null,
       "action": "skipped",
       "detail": "Scout contract already bound order_id=ORD-1070 reason_type=not_received",
-      "timestamp": "2026-10-24T11:03:39.672Z",
+      "timestamp": "2026-10-25T11:50:34.968Z",
       "confidence": null
     },
     {
@@ -206,7 +207,7 @@
       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T11:03:40.834Z",
+      "timestamp": "2026-10-25T11:50:36.264Z",
       "confidence": null
     },
     {
@@ -215,7 +216,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E1 ok=True source=lightning.metastore.refundwise.refundwise_usl.orders",
-      "timestamp": "2026-10-24T11:03:41.189Z",
+      "timestamp": "2026-10-25T11:50:37.484Z",
       "confidence": null
     },
     {
@@ -224,7 +225,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T11:03:41.866Z",
+      "timestamp": "2026-10-25T11:50:38.140Z",
       "confidence": null
     },
     {
@@ -233,7 +234,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E2 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_history",
-      "timestamp": "2026-10-24T11:03:42.552Z",
+      "timestamp": "2026-10-25T11:50:38.503Z",
       "confidence": null
     },
     {
@@ -242,7 +243,7 @@
       "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "action": "tool_round",
       "detail": "Collect order, history, policy",
-      "timestamp": "2026-10-24T11:03:43.881Z",
+      "timestamp": "2026-10-25T11:50:39.438Z",
       "confidence": null
     },
     {
@@ -251,7 +252,7 @@
       "model": null,
       "action": "run_sql",
       "detail": "E3 ok=True source=lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "timestamp": "2026-10-24T11:03:44.298Z",
+      "timestamp": "2026-10-25T11:50:40.232Z",
       "confidence": null
     },
     {
@@ -259,17 +260,17 @@
       "agent": "checks",
       "model": null,
       "action": "compute",
-      "detail": "{'days_since_delivery': 8, 'days_since_order': 11, 'delivered': True, 'order_total': 69.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-10-17', 'order_date': '2026-10-14', 'order_found': True, 'order_belongs_to_customer': True}",
-      "timestamp": "2026-10-24T11:03:44.298Z",
+      "detail": "{'days_since_delivery': 8, 'days_since_order': 11, 'delivered': True, 'order_total': 69.0, 'already_refunded': False, 'approved_refunds_last_90_days': 0, 'final_sale': False, 'category': 'Electronics', 'over_auto_limit': False, 'order_status': 'delivered', 'delivery_date': '2026-10-17', 'order_date': '2026-10-14', 'order_found': True, 'order_belongs_to_customer': True, 'customer_says_unopened': None}",
+      "timestamp": "2026-10-25T11:50:40.232Z",
       "confidence": null
     },
     {
       "step": "decide",
       "agent": "decide",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "propose",
       "detail": "Propose decision from checks and policy",
-      "timestamp": "2026-10-24T11:04:34.451Z",
+      "timestamp": "2026-10-25T11:51:25.263Z",
       "confidence": null
     },
     {
@@ -278,7 +279,7 @@
       "model": null,
       "action": "proposal",
       "detail": "human_review rules=['R10'] evidence=['E1']",
-      "timestamp": "2026-10-24T11:04:34.451Z",
+      "timestamp": "2026-10-25T11:51:25.263Z",
       "confidence": 1.0
     },
     {
@@ -286,8 +287,8 @@
       "agent": "critic",
       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "action": "review",
-      "detail": "Check proposal against evidence and checks (Request on 'nvidia/nemotron-3.5-super-vl-120b-a12b' was aborted; retried on 'nvidia/nemotron-3.5-lightning-30b-a3b'.)",
-      "timestamp": "2026-10-24T11:06:04.515Z",
+      "detail": "Check proposal against evidence and checks",
+      "timestamp": "2026-10-25T11:52:10.298Z",
       "confidence": null
     },
     {
@@ -296,7 +297,7 @@
       "model": null,
       "action": "verify_claims",
       "detail": "All cited evidence, rules, numbers and windows match the checks.",
-      "timestamp": "2026-10-24T11:06:04.515Z",
+      "timestamp": "2026-10-25T11:52:10.298Z",
       "confidence": null
     },
     {
@@ -305,34 +306,25 @@
       "model": null,
       "action": "verdict",
       "detail": "{\"verdict\": \"accept\", \"reason\": \"Customer claims not received but records show delivered.\", \"decision\": \"human_review\", \"revise_target\": null}",
-      "timestamp": "2026-10-24T11:06:04.515Z",
+      "timestamp": "2026-10-25T11:52:10.298Z",
       "confidence": 1.0
     },
     {
-      "step": "reporter",
-      "agent": "reporter",
-      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-      "action": "write",
-      "detail": "Write customer reply and explanation",
-      "timestamp": "2026-10-24T11:06:49.569Z",
+      "step": "orchestrator",
+      "agent": "orchestrator",
+      "model": null,
+      "action": "model_error",
+      "detail": "Error code: 502 - {'error': {'message': '/nemotron-3.5-lightning-30b-a3b_empty_response', 'type': 'api_error', 'code': 'provider_error', 'param': None, 'meterless_detail': 'nvidia/nemotron-3.5-lightning-30b-a3b_empty_response'}, 'meterless': {'request_id': 'chatcmpl-rul0vi57mvnrqnba', 'requested_mod",
+      "timestamp": "2026-10-25T11:53:42.503Z",
       "confidence": null
     },
     {
-      "step": "reporter",
-      "agent": "reporter",
+      "step": "orchestrator",
+      "agent": "orchestrator",
       "model": null,
-      "action": "fallback_text",
-      "detail": "Used template reply after invalid JSON",
-      "timestamp": "2026-10-24T11:06:49.570Z",
-      "confidence": null
-    },
-    {
-      "step": "reporter",
-      "agent": "reporter",
-      "model": null,
-      "action": "reply",
-      "detail": "{\"decision\": \"human_review\", \"steps\": [{\"step\": \"lightning.metastore.refundwise.refundwise_usl.orders\", \"evidence_id\": \"E1\", \"detail\": \"lightning.metastore.refundwise.refundwise_usl.orders\"}, {\"step\": \"lightning.metastore.refundwise.refundwise_usl.refund_history\", \"evidence_id\": \"E2\", \"detail\": \"lightning.metastore.refundwise.refundwise_usl.refund_history\"}, {\"step\": \"lightning.metastore.refundwise.refundwise_usl.refund_policy\", \"evidence_id\": \"E3\", \"detail\": \"lightning.metastore.refundwise.refundwise_usl.refund_policy\"}]}",
-      "timestamp": "2026-10-24T11:06:49.570Z",
+      "action": "guard_fallback",
+      "detail": "R10: Customer claims not received but records show delivered. -> human_review",
+      "timestamp": "2026-10-25T11:53:42.503Z",
       "confidence": null
     },
     {
@@ -340,12 +332,12 @@
       "agent": "orchestrator",
       "model": null,
       "action": "done",
-      "detail": "decision=human_review confidence=1.0 model_calls=6/12",
-      "timestamp": "2026-10-24T11:06:49.570Z",
+      "detail": "decision=human_review confidence=0.95 model_calls=5/12",
+      "timestamp": "2026-10-25T11:53:42.503Z",
       "confidence": null
     }
   ],
-  "model_calls": 6,
+  "model_calls": 5,
   "scout": {
     "intent": "order.not-received",
     "score": 0.9347,
@@ -369,28 +361,12 @@
       "reply.compose -> refundwise.reporter"
     ],
     "modelProfile": "nemotron-lightning",
-    "contractId": "01M5PS98CBQ7G8KEQ17ZYJ0GN1",
+    "contractId": "01M5SEBWPC6YS5KBR5TNNFJXKJ",
     "clarification": null,
-    "latencyMs": 12.2369
+    "latencyMs": 10.255
   },
-  "explanation": [
-    {
-      "step": "lightning.metastore.refundwise.refundwise_usl.orders",
-      "evidence_id": "E1",
-      "detail": "lightning.metastore.refundwise.refundwise_usl.orders"
-    },
-    {
-      "step": "lightning.metastore.refundwise.refundwise_usl.refund_history",
-      "evidence_id": "E2",
-      "detail": "lightning.metastore.refundwise.refundwise_usl.refund_history"
-    },
-    {
-      "step": "lightning.metastore.refundwise.refundwise_usl.refund_policy",
-      "evidence_id": "E3",
-      "detail": "lightning.metastore.refundwise.refundwise_usl.refund_policy"
-    }
-  ],
-  "trace_id": "trace-20261024-110339-439cf7",
+  "explanation": [],
+  "trace_id": "trace-20261025-115034-384c02",
   "request_id": "S8",
-  "log_path": "logs/trace-20261024-110339-439cf7.jsonl"
+  "log_path": "logs/trace-20261025-115034-384c02.jsonl"
 }
