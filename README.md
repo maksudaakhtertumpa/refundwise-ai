@@ -27,7 +27,7 @@ All 12 demo scenarios (`input_examples/requests.json`) produce the expected outc
 
 ## Demo video
 
-Demo video: _link added after upload_
+The demo video (3 min 48 s) is attached to our HackOS submission. It shows a live approve case with its evidence and SQL, a prompt injection blocked by Scout Intent, the Zetaris semantic layer and Meterless Nightshift.
 
 ## Architecture
 

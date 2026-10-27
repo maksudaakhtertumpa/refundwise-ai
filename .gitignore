@@ -10,3 +10,4 @@ __pycache__/
 node_modules/
 scout/telemetry/
 .DS_Store
+video/
